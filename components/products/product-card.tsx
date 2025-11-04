@@ -1,13 +1,13 @@
 // components/products/product-card.tsx
 'use client'
 
-import { Product } from '@/types/product'
+import { SearchProduct } from '@/types/search'
 import Link from 'next/link'
 import { Star, Heart, ShoppingCart } from 'lucide-react'
 import { useState } from 'react'
 
 interface ProductCardProps {
-  product: Product
+  product: SearchProduct
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
@@ -16,9 +16,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   const handleAddToCart = async () => {
     setIsAddingToCart(true)
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500))
-    // Add to cart logic here
     setIsAddingToCart(false)
   }
 
@@ -26,16 +24,21 @@ export default function ProductCard({ product }: ProductCardProps) {
     setIsWishlisted(!isWishlisted)
   }
 
-  const hasDiscount = parseFloat(product.discount_percentage) > 0
-  const discountAmount = hasDiscount 
+  // Calculate discount if available
+  const hasDiscount = product.discount_percentage && parseFloat(product.discount_percentage) > 0
+  const discountAmount = hasDiscount && product.price_after_discount
     ? (parseFloat(product.original_price) - product.price_after_discount).toFixed(2)
-    : 0
+    : "0"
+
+  // Convert total_rating to number for comparison
+  const rating = typeof product.total_rating === 'string' 
+    ? parseFloat(product.total_rating) 
+    : product.total_rating || 0
 
   return (
     <div className="group bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100">
       {/* Image Container */}
       <div className="relative aspect-square overflow-hidden rounded-t-lg bg-gray-100">
-        {/* Product Image */}
         <img
           src={product.image}
           alt={product.name}
@@ -49,7 +52,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
         )}
 
-        {/* New Badge - You can add logic for new products */}
+        {/* New Badge */}
         <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-semibold">
           New
         </div>
@@ -85,29 +88,31 @@ export default function ProductCard({ product }: ProductCardProps) {
           </Link>
         </h3>
 
-        {/* Rating */}
-        <div className="flex items-center space-x-1 mb-3">
-          <div className="flex">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <Star
-                key={star}
-                size={14}
-                className={`${
-                  star <= Math.floor(product.total_rating)
-                    ? 'text-yellow-400 fill-current'
-                    : 'text-gray-300'
-                }`}
-              />
-            ))}
+        {/* Rating - Only show if available */}
+        {rating > 0 && (
+          <div className="flex items-center space-x-1 mb-3">
+            <div className="flex">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                  key={star}
+                  size={14}
+                  className={`${
+                    star <= Math.floor(rating)
+                      ? 'text-yellow-400 fill-current'
+                      : 'text-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="text-sm text-gray-600">
+              ({rating})
+            </span>
           </div>
-          <span className="text-sm text-gray-600">
-            ({product.total_rating})
-          </span>
-        </div>
+        )}
 
         {/* Price */}
         <div className="flex items-center space-x-2">
-          {hasDiscount ? (
+          {hasDiscount && product.price_after_discount ? (
             <>
               <span className="text-lg font-bold text-gray-900">
                 ${product.price_after_discount.toFixed(2)}
@@ -115,9 +120,11 @@ export default function ProductCard({ product }: ProductCardProps) {
               <span className="text-sm text-gray-500 line-through">
                 ${product.original_price}
               </span>
-              <span className="text-sm text-green-600 font-semibold">
-                Save ${discountAmount}
-              </span>
+              {parseFloat(discountAmount) > 0 && (
+                <span className="text-sm text-green-600 font-semibold">
+                  Save ${discountAmount}
+                </span>
+              )}
             </>
           ) : (
             <span className="text-lg font-bold text-gray-900">
