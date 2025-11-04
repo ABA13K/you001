@@ -10,7 +10,7 @@ interface Category {
 }
 
 interface CategoryFilterProps {
-  categories: Category[]
+  categories: Category[ ]
   onCategoryChange: (categories: string[]) => void
 }
 
