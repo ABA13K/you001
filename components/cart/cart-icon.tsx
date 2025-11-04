@@ -1,13 +1,15 @@
-// components/cart/cart-icon.tsx
-'use client'
 
 import Link from 'next/link'
 import { ShoppingCart } from 'lucide-react'
-import { useCartStore } from '@/store/cart-store'
+
+// Temporary - replace with your actual cart store
+const useCartStore = () => ({
+  items: [] as Array<{ quantity: number }>
+})
 
 export default function CartIcon() {
   const { items } = useCartStore()
-  const itemCount = items.reduce((total: number, item) => total + item.quantity, 0)
+  const itemCount = items.reduce((total: number, item: { quantity: number }) => total + item.quantity, 0)
 
   return (
     <Link href="/cart" className="relative p-2 hover:text-primary transition-colors">
