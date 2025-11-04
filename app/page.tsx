@@ -4,6 +4,7 @@ import CategoriesSlider from '@/components/home/categories-slider'
 import StaticCategories from '@/components/home/static-categories'
 import MostSelled from '@/components/home/most-selled'
 import MostRated from '@/components/home/most-rated'
+import LatestProductsServer from '@/components/products/latest-products-server'
 import LastAdded from '@/components/home/last-added'
 import MainCategoriesServer from '@/components/categories/main-categories-server'
 
@@ -12,6 +13,7 @@ export default function HomePage() {
     <main className="min-h-screen">
       <HeroSlider />
             <MainCategoriesServer />
+                  <LatestProductsServer />
       <CategoriesSlider />
       <StaticCategories />
       
