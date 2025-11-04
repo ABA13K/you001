@@ -2,9 +2,9 @@
 'use client'
 
 import { useState } from 'react'
-import PriceFilter from './price-filter'
-import CategoryFilter from './category-filter'
-import SortOptions from './sort-options'
+import PriceFilter from '../products/price-filter'
+import CategoryFilter from '../products/category-filter'
+import SortOptions from '../products/sort-options'
 import { Filter, X } from 'lucide-react'
 
 interface ProductsFilterProps {

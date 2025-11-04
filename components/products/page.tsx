@@ -2,7 +2,7 @@
 'use client'
 
 import { useState } from 'react'
-import ProductsFilter from '@/components/products/products-filter'
+import ProductsFilter from '@/components/filters/products-filter'
 import ProductsGrid from '@/components/products/products-grid'
 
 interface FilterState {
