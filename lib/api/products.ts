@@ -1,11 +1,16 @@
 // lib/api/products.ts
-import { LatestProductsResponse } from '@/types/product'
+import {
+    LatestProductsResponse,
+    RandomProductsResponse,
+    TopRatedProductsResponse,
+    TopSellingProductsResponse
+} from '@/types/product'
 
 const API_BASE_URL = 'https://aa-dev.site/you/api/public'
 
-export async function getLatestProducts(): Promise<LatestProductsResponse> {
+async function fetchProducts<T>(endpoint: string): Promise<T> {
     try {
-        const response = await fetch(`${API_BASE_URL}/home-page/products/latest`, {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -17,10 +22,26 @@ export async function getLatestProducts(): Promise<LatestProductsResponse> {
             throw new Error(`HTTP error! status: ${response.status}`)
         }
 
-        const data: LatestProductsResponse = await response.json()
+        const data: T = await response.json()
         return data
     } catch (error) {
-        console.error('Error fetching latest products:', error)
-        throw new Error('Failed to fetch latest products')
+        console.error(`Error fetching from ${endpoint}:`, error)
+        throw new Error(`Failed to fetch from ${endpoint}`)
     }
+}
+
+export async function getLatestProducts(): Promise<LatestProductsResponse> {
+    return fetchProducts<LatestProductsResponse>('/home-page/products/latest')
+}
+
+export async function getRandomProducts(): Promise<RandomProductsResponse> {
+    return fetchProducts<RandomProductsResponse>('/home-page/products/random')
+}
+
+export async function getTopRatedProducts(): Promise<TopRatedProductsResponse> {
+    return fetchProducts<TopRatedProductsResponse>('/home-page/products/top-rated')
+}
+
+export async function getTopSellingProducts(): Promise<TopSellingProductsResponse> {
+    return fetchProducts<TopSellingProductsResponse>('/home-page/products/top-selling')
 }

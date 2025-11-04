@@ -1,27 +1,26 @@
-// src/app/page.tsx
+// app/page.tsx
 import HeroSlider from '@/components/home/hero-slider'
-import CategoriesSlider from '@/components/home/categories-slider'
-import StaticCategories from '@/components/home/static-categories'
-import MostSelled from '@/components/home/most-selled'
-import MostRated from '@/components/home/most-rated'
-import LatestProductsServer from '@/components/products/latest-products-server'
-import LastAdded from '@/components/home/last-added'
 import MainCategoriesServer from '@/components/categories/main-categories-server'
+import LatestProductsServer from '@/components/products/latest-products-server'
+import RandomProductsServer from '@/components/products/random-products-server'
+import TopRatedProductsServer from '@/components/products/top-rated-products-server'
+import TopSellingProductsServer from '@/components/products/top-selling-products-server'
+import StaticCategories from '@/components/home/static-categories'
 
 export default function HomePage() {
   return (
     <main className="min-h-screen">
       <HeroSlider />
-            <MainCategoriesServer />
-                  <LatestProductsServer />
-      <CategoriesSlider />
-      <StaticCategories />
+      <MainCategoriesServer />
       
-      <div className="container mx-auto px-4 py-8 space-y-12">
-        <LastAdded />
-        <MostSelled />
-        <MostRated />
+      <div className="space-y-0">
+        <LatestProductsServer />
+        <RandomProductsServer />
+        <TopRatedProductsServer />
+        <TopSellingProductsServer />
       </div>
+      
+      <StaticCategories />
     </main>
   )
 }

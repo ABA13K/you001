@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 // types/product.ts
 export interface Product {
     id: number
@@ -9,7 +10,13 @@ export interface Product {
     image: string
 }
 
-export interface LatestProductsResponse {
+export interface ProductsResponse {
     message: string
     data: Product[]
 }
+
+// Specific response types for each endpoint
+export interface LatestProductsResponse extends ProductsResponse { }
+export interface RandomProductsResponse extends ProductsResponse { }
+export interface TopRatedProductsResponse extends ProductsResponse { }
+export interface TopSellingProductsResponse extends ProductsResponse { }
