@@ -26,20 +26,6 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const [isWishlisted, setIsWishlisted] = useState(false)
-  const [isAddingToCart, setIsAddingToCart] = useState(false)
-
-  const handleAddToCart = async () => {
-    setIsAddingToCart(true)
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500))
-    // Add to cart logic here
-    setIsAddingToCart(false)
-  }
-
-  const handleWishlist = () => {
-    setIsWishlisted(!isWishlisted)
-    // Wishlist logic here
-  }
 
   const discount = product.originalPrice 
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
@@ -47,7 +33,6 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   return (
     <div className="group bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300 border border-gray-100">
-      {/* Image Container */}
       <div className="relative aspect-square overflow-hidden rounded-t-lg bg-gray-100">
         <Image
           src={product.image}
@@ -75,26 +60,14 @@ export default function ProductCard({ product }: ProductCardProps) {
           )}
         </div>
 
-        {/* Actions */}
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <button
-            onClick={handleWishlist}
-            className={`p-2 rounded-full bg-white shadow-md hover:shadow-lg transition-all ${
-              isWishlisted ? 'text-red-500' : 'text-gray-600'
-            }`}
-          >
-            <Heart size={18} fill={isWishlisted ? 'currentColor' : 'none'} />
-          </button>
-        </div>
-
-        {/* Add to Cart Button */}
+        {/* Wishlist Button */}
         <button
-          onClick={handleAddToCart}
-          disabled={isAddingToCart}
-          className="absolute bottom-2 left-2 right-2 bg-black text-white py-2 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 disabled:opacity-50 flex items-center justify-center space-x-1"
+          onClick={() => setIsWishlisted(!isWishlisted)}
+          className={`absolute top-2 right-2 p-2 rounded-full bg-white shadow-md hover:shadow-lg transition-all ${
+            isWishlisted ? 'text-red-500' : 'text-gray-600'
+          }`}
         >
-          <ShoppingCart size={16} />
-          <span>{isAddingToCart ? 'Adding...' : 'Add to Cart'}</span>
+          <Heart size={18} fill={isWishlisted ? 'currentColor' : 'none'} />
         </button>
       </div>
 
@@ -102,7 +75,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       <div className="p-4">
         <p className="text-sm text-gray-500 mb-1">{product.category}</p>
         <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 hover:text-blue-600 transition-colors">
-          <a href={`/product/${product.slug}`}>{product.name}</a>
+          {product.name}
         </h3>
 
         {/* Rating */}
@@ -120,16 +93,12 @@ export default function ProductCard({ product }: ProductCardProps) {
               />
             ))}
           </div>
-          <span className="text-sm text-gray-600">
-            ({product.reviewCount})
-          </span>
+          <span className="text-sm text-gray-600">({product.reviewCount})</span>
         </div>
 
         {/* Price */}
         <div className="flex items-center space-x-2">
-          <span className="text-lg font-bold text-gray-900">
-            ${product.price}
-          </span>
+          <span className="text-lg font-bold text-gray-900">${product.price}</span>
           {product.originalPrice && (
             <span className="text-sm text-gray-500 line-through">
               ${product.originalPrice}
