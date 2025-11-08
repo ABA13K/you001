@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { SearchProvider } from '@/context/search-context'
 import { Suspense } from 'react'
+import Header from '@/components/layout/header'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -22,7 +23,10 @@ export default function RootLayout({
       <body className={inter.className}>
         <SearchProvider>
           <Suspense fallback={<div>Loading...</div>}>
-            {children}
+            <Header />
+            <main>
+              {children}
+            </main>
           </Suspense>
         </SearchProvider>
       </body>

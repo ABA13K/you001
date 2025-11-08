@@ -10,11 +10,13 @@ import StaticCategories from '@/components/home/static-categories'
 export default function HomePage() {
   return (
     <main className="min-h-screen">
+      {/* Header is now in the layout, so it will appear above the hero */}
       <HeroSlider />
       <MainCategoriesServer />
+      <LatestProductsServer />
       
       <div className="space-y-0">
-        <LatestProductsServer />
+        {/* <BannerAd size="medium" /> */}
         <RandomProductsServer />
         <TopRatedProductsServer />
         <TopSellingProductsServer />

@@ -4,11 +4,12 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import SearchBar from '@/components/search/search-bar'
 
 const slides = [
   {
     id: 1,
-    image: '/images/hero-1.jpg',
+    image: 'https://images.unsplash.com/photo-1607082350899-7e105aa886ae?w=1200&h=600&fit=crop',
     title: 'Summer Collection 2024',
     subtitle: 'Discover the latest trends',
     description: 'Get up to 50% off on new arrivals',
@@ -17,7 +18,7 @@ const slides = [
   },
   {
     id: 2,
-    image: '/images/hero-2.jpg',
+    image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1200&h=600&fit=crop',
     title: 'Winter Essentials',
     subtitle: 'Stay warm in style',
     description: 'Premium quality winter wear',
@@ -26,7 +27,7 @@ const slides = [
   },
   {
     id: 3,
-    image: '/images/hero-3.jpg',
+    image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&h=600&fit=crop',
     title: 'Limited Time Offer',
     subtitle: 'Don\'t miss out',
     description: 'Free shipping on orders over $100',
@@ -80,6 +81,12 @@ export default function HeroSlider() {
                 <p className="text-lg font-semibold mb-2">{slide.subtitle}</p>
                 <h1 className="text-5xl font-bold mb-4">{slide.title}</h1>
                 <p className="text-xl mb-6">{slide.description}</p>
+                
+                {/* Search Bar in Hero */}
+                <div className="mb-6">
+                  <SearchBar />
+                </div>
+                
                 <button className="bg-white text-black px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
                   {slide.buttonText}
                 </button>
