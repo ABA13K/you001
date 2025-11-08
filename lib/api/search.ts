@@ -2,7 +2,10 @@
 // lib/api/search.ts
 import { SearchResults, SearchParams, SearchFilters } from '@/types/search'
 
-const API_BASE_URL = 'https://aa-dev.site/you/api/public'
+// Use relative URL for same-origin requests (no CORS issues)
+const API_BASE_URL = process.env.NODE_ENV === 'development'
+    ? 'https://aa-dev.site/you/api/public'
+    : '/api' // Use proxy in production
 
 // Helper function to convert filters to URLSearchParams
 function buildSearchParams(filters: Record<string, any>): URLSearchParams {
@@ -17,25 +20,30 @@ function buildSearchParams(filters: Record<string, any>): URLSearchParams {
     return params
 }
 
-// Main search function - uses the filter endpoint with search query
+// Main search function - uses proxy to avoid CORS
 export async function searchProducts(params: SearchParams): Promise<SearchResults> {
     try {
         const { query, page = 1, limit = 12, filters = {} } = params
 
-        // Build query parameters for the filter endpoint
+        // Build query parameters
         const searchParams = buildSearchParams({
-            q: query, // Search query
+            q: query,
             page: page.toString(),
             limit: limit.toString(),
-            ...filters // Include any additional filters
+            ...filters
         })
 
-        const response = await fetch(`${API_BASE_URL}/products/filter?${searchParams.toString()}`, {
+        // Use proxy route in production, direct API in development
+        const url = process.env.NODE_ENV === 'development'
+            ? `https://aa-dev.site/you/api/public/products/filter?${searchParams.toString()}`
+            : `/api/search?${searchParams.toString()}`
+
+        const response = await fetch(url, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
             },
-            cache: 'no-store' // Fresh results for search
+            cache: 'no-store'
         })
 
         if (!response.ok) {
@@ -57,6 +65,41 @@ export async function searchProducts(params: SearchParams): Promise<SearchResult
     }
 }
 
+// Quick search for real-time results
+export async function quickSearch(query: string, limit: number = 6) {
+    try {
+        if (!query.trim()) return []
+
+        const searchParams = buildSearchParams({
+            q: query,
+            limit: limit.toString()
+        })
+
+        // Use proxy route in production, direct API in development
+        const url = process.env.NODE_ENV === 'development'
+            ? `https://aa-dev.site/you/api/public/products/filter?${searchParams.toString()}`
+            : `/api/search?${searchParams.toString()}`
+
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            next: { revalidate: 10 }
+        })
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const data = await response.json()
+        return data.data || []
+    } catch (error) {
+        console.error('Error in quick search:', error)
+        return []
+    }
+}
+
 // Filter products with advanced filters
 export async function filterProducts(filters: SearchFilters, page: number = 1, limit: number = 12): Promise<SearchResults> {
     try {
@@ -67,7 +110,12 @@ export async function filterProducts(filters: SearchFilters, page: number = 1, l
             ...filters
         })
 
-        const response = await fetch(`${API_BASE_URL}/products/filter?${searchParams.toString()}`, {
+        // Use proxy route in production, direct API in development
+        const url = process.env.NODE_ENV === 'development'
+            ? `https://aa-dev.site/you/api/public/products/filter?${searchParams.toString()}`
+            : `/api/search?${searchParams.toString()}`
+
+        const response = await fetch(url, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -91,37 +139,6 @@ export async function filterProducts(filters: SearchFilters, page: number = 1, l
     } catch (error) {
         console.error('Error filtering products:', error)
         throw new Error('Failed to filter products')
-    }
-}
-
-// Quick search for real-time results - optimized for performance
-export async function quickSearch(query: string, limit: number = 6) {
-    try {
-        if (!query.trim()) return []
-
-        const searchParams = buildSearchParams({
-            q: query,
-            limit: limit.toString()
-        })
-
-        const response = await fetch(`${API_BASE_URL}/products/filter?${searchParams.toString()}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            // Short cache for quick search
-            next: { revalidate: 10 }
-        })
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`)
-        }
-
-        const data = await response.json()
-        return data.data || []
-    } catch (error) {
-        console.error('Error in quick search:', error)
-        return []
     }
 }
 
