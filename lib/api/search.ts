@@ -35,7 +35,8 @@ export async function searchProducts(params: SearchParams): Promise<SearchResult
             headers: {
                 'Content-Type': 'application/json',
             },
-            next: { revalidate: 3600 }
+            // No caching for search to get fresh results
+            cache: 'no-store'
         })
 
         if (!response.ok) {
@@ -72,7 +73,7 @@ export async function filterProducts(filters: SearchFilters, page: number = 1, l
             headers: {
                 'Content-Type': 'application/json',
             },
-            next: { revalidate: 3600 }
+            cache: 'no-store'
         })
 
         if (!response.ok) {
@@ -94,7 +95,7 @@ export async function filterProducts(filters: SearchFilters, page: number = 1, l
     }
 }
 
-// Quick search for header/search bar
+// Quick search for header/search bar - optimized for real-time
 export async function quickSearch(query: string, limit: number = 5) {
     try {
         if (!query.trim()) return []
@@ -109,6 +110,8 @@ export async function quickSearch(query: string, limit: number = 5) {
             headers: {
                 'Content-Type': 'application/json',
             },
+            // Very short cache for quick search
+            next: { revalidate: 10 }
         })
 
         if (!response.ok) {

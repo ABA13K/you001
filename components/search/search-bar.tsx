@@ -3,7 +3,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Search, X, Clock, TrendingUp } from 'lucide-react'
+import { Search, X, Clock, TrendingUp, Loader2 } from 'lucide-react'
 import { useSearchOperations } from '@/hooks/use-search'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -15,7 +15,13 @@ export default function SearchBar() {
   const inputRef = useRef<HTMLInputElement>(null)
   const searchContainerRef = useRef<HTMLDivElement>(null)
 
-  const { performQuickSearch, quickResults, clearSearch } = useSearchOperations()
+  const { 
+    performQuickSearch, 
+    quickResults, 
+    clearSearch, 
+    isQuickSearchLoading 
+  } = useSearchOperations()
+  
   const router = useRouter()
 
   // Load recent searches from localStorage
@@ -35,11 +41,18 @@ export default function SearchBar() {
     localStorage.setItem('recentSearches', JSON.stringify(updated))
   }
 
-  // Handle search input change
+  // Handle search input change with real-time search
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setLocalQuery(value)
-    performQuickSearch(value)
+    
+    // Perform real-time search as user types
+    if (value.length >= 2) {
+      performQuickSearch(value)
+    } else {
+      // Clear results if query is too short
+      performQuickSearch('')
+    }
   }
 
   // Handle search submission
@@ -79,7 +92,7 @@ export default function SearchBar() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const showSuggestions = isOpen && (quickResults.length > 0 || recentSearches.length > 0 || localQuery.length > 0)
+  const showSuggestions = isOpen && (quickResults.length > 0 || recentSearches.length > 0 || localQuery.length > 0 || isQuickSearchLoading)
 
   return (
     <div ref={searchContainerRef} className="relative w-full max-w-2xl">
@@ -101,7 +114,11 @@ export default function SearchBar() {
             onClick={handleClear}
             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
           >
-            <X className="w-5 h-5" />
+            {isQuickSearchLoading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <X className="w-5 h-5" />
+            )}
           </button>
         )}
       </div>
@@ -109,8 +126,16 @@ export default function SearchBar() {
       {/* Search Suggestions Dropdown */}
       {showSuggestions && (
         <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-xl mt-1 max-h-96 overflow-y-auto z-50">
+          {/* Loading State */}
+          {isQuickSearchLoading && (
+            <div className="p-4 text-center">
+              <Loader2 className="w-5 h-5 animate-spin mx-auto text-blue-600" />
+              <p className="text-sm text-gray-600 mt-1">Searching...</p>
+            </div>
+          )}
+
           {/* Quick Search Results */}
-          {quickResults.length > 0 && (
+          {!isQuickSearchLoading && quickResults.length > 0 && (
             <div className="p-2">
               <div className="flex items-center px-2 py-1 text-sm font-semibold text-gray-700">
                 <TrendingUp className="w-4 h-4 mr-2" />
@@ -120,13 +145,13 @@ export default function SearchBar() {
                 <Link
                   key={product.id}
                   href={`/product/${product.id}`}
-                  className="flex items-center p-2 hover:bg-gray-50 rounded-lg transition-colors"
+                  className="flex items-center p-2 hover:bg-gray-50 rounded-lg transition-colors border-b border-gray-100 last:border-b-0"
                   onClick={() => setIsOpen(false)}
                 >
                   <img
                     src={product.image}
                     alt={product.name}
-                    className="w-10 h-10 rounded object-cover mr-3"
+                    className="w-12 h-12 rounded object-cover mr-3 flex-shrink-0"
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
@@ -136,13 +161,16 @@ export default function SearchBar() {
                       ${product.original_price}
                     </p>
                   </div>
+                  <div className="text-xs text-gray-400 ml-2">
+                    View →
+                  </div>
                 </Link>
               ))}
             </div>
           )}
 
-          {/* Recent Searches */}
-          {recentSearches.length > 0 && quickResults.length === 0 && (
+          {/* Recent Searches - Show when no real-time results */}
+          {!isQuickSearchLoading && quickResults.length === 0 && recentSearches.length > 0 && localQuery.length < 2 && (
             <div className="p-2">
               <div className="flex items-center px-2 py-1 text-sm font-semibold text-gray-700">
                 <Clock className="w-4 h-4 mr-2" />
@@ -155,21 +183,30 @@ export default function SearchBar() {
                     setLocalQuery(search)
                     handleSearch(search)
                   }}
-                  className="w-full text-left flex items-center p-2 hover:bg-gray-50 rounded-lg transition-colors"
+                  className="w-full text-left flex items-center p-2 hover:bg-gray-50 rounded-lg transition-colors border-b border-gray-100 last:border-b-0"
                 >
-                  <Clock className="w-4 h-4 text-gray-400 mr-2" />
-                  <span className="text-sm text-gray-700">{search}</span>
+                  <Clock className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
+                  <span className="text-sm text-gray-700 truncate">{search}</span>
                 </button>
               ))}
             </div>
           )}
 
+          {/* No Results Found */}
+          {!isQuickSearchLoading && quickResults.length === 0 && localQuery.length >= 2 && (
+            <div className="p-4 text-center">
+              <Search className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+              <p className="text-sm text-gray-600">No products found for {localQuery}</p>
+              <p className="text-xs text-gray-500 mt-1">Try different keywords</p>
+            </div>
+          )}
+
           {/* Search Button for Current Query */}
-          {localQuery && (
+          {localQuery.length >= 2 && (
             <div className="border-t border-gray-200 p-2">
               <button
                 onClick={() => handleSearch()}
-                className="w-full flex items-center justify-center p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="w-full flex items-center justify-center p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
                 <Search className="w-4 h-4 mr-2" />
                 Search for {localQuery}

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // hooks/use-search.ts
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { searchProducts, filterProducts, quickSearch } from '@/lib/api/search'
 import { SearchParams, SearchFilters } from '@/types/search'
 import { useSearch } from '@/context/search-context'
@@ -8,6 +8,8 @@ import { useSearch } from '@/context/search-context'
 export function useSearchOperations() {
     const { state, dispatch } = useSearch()
     const [quickResults, setQuickResults] = useState<any[]>([])
+    const [isQuickSearchLoading, setIsQuickSearchLoading] = useState(false)
+    const searchTimeoutRef = useRef<number | null>(null) // Use number instead of NodeJS.Timeout
 
     const performSearch = useCallback(async (params: SearchParams) => {
         dispatch({ type: 'SET_LOADING', payload: true })
@@ -15,7 +17,16 @@ export function useSearchOperations() {
 
         try {
             const results = await searchProducts(params)
-            dispatch({ type: 'SET_RESULTS', payload: results })
+            dispatch({
+                type: 'SET_RESULTS',
+                payload: {
+                    products: results.products,
+                    total: results.total,
+                    hasMore: results.hasMore,
+                    currentPage: results.currentPage,
+                    totalPages: results.totalPages
+                }
+            })
         } catch (error) {
             dispatch({ type: 'SET_ERROR', payload: 'Failed to search products' })
         }
@@ -26,11 +37,51 @@ export function useSearchOperations() {
 
         try {
             const results = await filterProducts(filters, page)
-            dispatch({ type: 'SET_RESULTS', payload: results })
+            dispatch({
+                type: 'SET_RESULTS',
+                payload: {
+                    products: results.products,
+                    total: results.total,
+                    hasMore: results.hasMore,
+                    currentPage: results.currentPage,
+                    totalPages: results.totalPages
+                }
+            })
         } catch (error) {
             dispatch({ type: 'SET_ERROR', payload: 'Failed to filter products' })
         }
     }, [dispatch])
+
+    const performQuickSearch = useCallback(async (query: string) => {
+        // Clear existing timeout
+        if (searchTimeoutRef.current !== null) {
+            window.clearTimeout(searchTimeoutRef.current)
+            searchTimeoutRef.current = null
+        }
+
+        // Clear results if query is too short
+        if (query.length < 2) {
+            setQuickResults([])
+            setIsQuickSearchLoading(false)
+            return
+        }
+
+        setIsQuickSearchLoading(true)
+
+        // Debounce the API call using window.setTimeout
+        searchTimeoutRef.current = window.setTimeout(async () => {
+            try {
+                const results = await quickSearch(query)
+                setQuickResults(results)
+            } catch (error) {
+                console.error('Quick search error:', error)
+                setQuickResults([])
+            } finally {
+                setIsQuickSearchLoading(false)
+                searchTimeoutRef.current = null
+            }
+        }, 300) // 300ms debounce
+    }, [])
 
     const loadMore = useCallback(async (params: SearchParams) => {
         dispatch({ type: 'SET_LOADING', payload: true })
@@ -44,25 +95,26 @@ export function useSearchOperations() {
         }
     }, [dispatch])
 
-    const performQuickSearch = useCallback(async (query: string) => {
-        if (query.length < 2) {
-            setQuickResults([])
-            return
-        }
-
-        try {
-            const results = await quickSearch(query)
-            setQuickResults(results)
-        } catch (error) {
-            console.error('Quick search error:', error)
-            setQuickResults([])
-        }
-    }, [])
-
     const clearSearch = useCallback(() => {
+        // Clear timeout
+        if (searchTimeoutRef.current !== null) {
+            window.clearTimeout(searchTimeoutRef.current)
+            searchTimeoutRef.current = null
+        }
+
         dispatch({ type: 'SET_QUERY', payload: '' })
-        dispatch({ type: 'SET_RESULTS', payload: { products: [], total: 0, hasMore: false, currentPage: 1, totalPages: 0 } })
+        dispatch({
+            type: 'SET_RESULTS',
+            payload: {
+                products: [],
+                total: 0,
+                hasMore: false,
+                currentPage: 1,
+                totalPages: 0
+            }
+        })
         setQuickResults([])
+        setIsQuickSearchLoading(false)
     }, [dispatch])
 
     return {
@@ -73,6 +125,7 @@ export function useSearchOperations() {
         error: state.error,
         hasMore: state.hasMore,
         quickResults,
+        isQuickSearchLoading,
         performSearch,
         performFilter,
         loadMore,
