@@ -3,54 +3,66 @@
 import { useState, useCallback, useRef } from 'react'
 import { searchProducts, filterProducts, quickSearch } from '@/lib/api/search'
 import { SearchParams, SearchFilters } from '@/types/search'
-import { useSearch } from '@/context/search-context'
 
 export function useSearchOperations() {
-    const { state, dispatch } = useSearch()
+    const [state, setState] = useState({
+        query: '',
+        results: [] as any[],
+        total: 0,
+        loading: false,
+        error: null as string | null,
+        hasMore: false,
+        filters: {},
+        sortBy: 'relevance'
+    })
+
     const [quickResults, setQuickResults] = useState<any[]>([])
     const [isQuickSearchLoading, setIsQuickSearchLoading] = useState(false)
-    const searchTimeoutRef = useRef<number | null>(null) // Use number instead of NodeJS.Timeout
+    const searchTimeoutRef = useRef<number | null>(null)
 
     const performSearch = useCallback(async (params: SearchParams) => {
-        dispatch({ type: 'SET_LOADING', payload: true })
-        dispatch({ type: 'SET_QUERY', payload: params.query })
+        setState(prev => ({ ...prev, loading: true, query: params.query }))
 
         try {
             const results = await searchProducts(params)
-            dispatch({
-                type: 'SET_RESULTS',
-                payload: {
-                    products: results.products,
-                    total: results.total,
-                    hasMore: results.hasMore,
-                    currentPage: results.currentPage,
-                    totalPages: results.totalPages
-                }
-            })
+            setState(prev => ({
+                ...prev,
+                results: results.products,
+                total: results.total,
+                hasMore: results.hasMore,
+                loading: false,
+                error: null
+            }))
         } catch (error) {
-            dispatch({ type: 'SET_ERROR', payload: 'Failed to search products' })
+            setState(prev => ({
+                ...prev,
+                loading: false,
+                error: 'Failed to search products'
+            }))
         }
-    }, [dispatch])
+    }, [])
 
     const performFilter = useCallback(async (filters: SearchFilters, page: number = 1) => {
-        dispatch({ type: 'SET_LOADING', payload: true })
+        setState(prev => ({ ...prev, loading: true }))
 
         try {
             const results = await filterProducts(filters, page)
-            dispatch({
-                type: 'SET_RESULTS',
-                payload: {
-                    products: results.products,
-                    total: results.total,
-                    hasMore: results.hasMore,
-                    currentPage: results.currentPage,
-                    totalPages: results.totalPages
-                }
-            })
+            setState(prev => ({
+                ...prev,
+                results: results.products,
+                total: results.total,
+                hasMore: results.hasMore,
+                loading: false,
+                error: null
+            }))
         } catch (error) {
-            dispatch({ type: 'SET_ERROR', payload: 'Failed to filter products' })
+            setState(prev => ({
+                ...prev,
+                loading: false,
+                error: 'Failed to filter products'
+            }))
         }
-    }, [dispatch])
+    }, [])
 
     const performQuickSearch = useCallback(async (query: string) => {
         // Clear existing timeout
@@ -68,10 +80,12 @@ export function useSearchOperations() {
 
         setIsQuickSearchLoading(true)
 
-        // Debounce the API call using window.setTimeout
+        // Debounce the API call - wait 300ms after user stops typing
         searchTimeoutRef.current = window.setTimeout(async () => {
             try {
+                console.log('Performing real-time search for:', query)
                 const results = await quickSearch(query)
+                console.log('Real-time search results:', results)
                 setQuickResults(results)
             } catch (error) {
                 console.error('Quick search error:', error)
@@ -80,50 +94,59 @@ export function useSearchOperations() {
                 setIsQuickSearchLoading(false)
                 searchTimeoutRef.current = null
             }
-        }, 300) // 300ms debounce
+        }, 300)
     }, [])
 
     const loadMore = useCallback(async (params: SearchParams) => {
-        dispatch({ type: 'SET_LOADING', payload: true })
+        setState(prev => ({ ...prev, loading: true }))
 
         try {
             const nextPage = (params.page || 1) + 1
             const results = await searchProducts({ ...params, page: nextPage })
-            dispatch({ type: 'LOAD_MORE', payload: results.products })
+            setState(prev => ({
+                ...prev,
+                results: [...prev.results, ...results.products],
+                loading: false
+            }))
         } catch (error) {
-            dispatch({ type: 'SET_ERROR', payload: 'Failed to load more products' })
+            setState(prev => ({
+                ...prev,
+                loading: false,
+                error: 'Failed to load more products'
+            }))
         }
-    }, [dispatch])
+    }, [])
 
     const clearSearch = useCallback(() => {
-        // Clear timeout
         if (searchTimeoutRef.current !== null) {
             window.clearTimeout(searchTimeoutRef.current)
             searchTimeoutRef.current = null
         }
 
-        dispatch({ type: 'SET_QUERY', payload: '' })
-        dispatch({
-            type: 'SET_RESULTS',
-            payload: {
-                products: [],
-                total: 0,
-                hasMore: false,
-                currentPage: 1,
-                totalPages: 0
-            }
+        setState({
+            query: '',
+            results: [],
+            total: 0,
+            loading: false,
+            error: null,
+            hasMore: false,
+            filters: {},
+            sortBy: 'relevance'
         })
         setQuickResults([])
         setIsQuickSearchLoading(false)
-    }, [dispatch])
+    }, [])
+
+    const setFilters = useCallback((filters: any) => {
+        setState(prev => ({ ...prev, filters }))
+    }, [])
+
+    const setSort = useCallback((sortBy: string) => {
+        setState(prev => ({ ...prev, sortBy }))
+    }, [])
 
     return {
-        query: state.query,
-        results: state.results,
-        total: state.total,
-        loading: state.loading,
-        error: state.error,
-        hasMore: state.hasMore,
+        ...state,
         quickResults,
         isQuickSearchLoading,
         performSearch,
@@ -131,7 +154,7 @@ export function useSearchOperations() {
         loadMore,
         performQuickSearch,
         clearSearch,
-        setFilters: (filters: any) => dispatch({ type: 'SET_FILTERS', payload: filters }),
-        setSort: (sortBy: string) => dispatch({ type: 'SET_SORT', payload: sortBy })
+        setFilters,
+        setSort
     }
 }

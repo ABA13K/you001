@@ -17,26 +17,25 @@ function buildSearchParams(filters: Record<string, any>): URLSearchParams {
     return params
 }
 
-// Search products by query
+// Main search function - uses the filter endpoint with search query
 export async function searchProducts(params: SearchParams): Promise<SearchResults> {
     try {
         const { query, page = 1, limit = 12, filters = {} } = params
 
-        // Build query parameters
+        // Build query parameters for the filter endpoint
         const searchParams = buildSearchParams({
-            q: query,
+            q: query, // Search query
             page: page.toString(),
             limit: limit.toString(),
-            ...filters
+            ...filters // Include any additional filters
         })
 
-        const response = await fetch(`${API_BASE_URL}/products/search?${searchParams.toString()}`, {
+        const response = await fetch(`${API_BASE_URL}/products/filter?${searchParams.toString()}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
             },
-            // No caching for search to get fresh results
-            cache: 'no-store'
+            cache: 'no-store' // Fresh results for search
         })
 
         if (!response.ok) {
@@ -95,8 +94,8 @@ export async function filterProducts(filters: SearchFilters, page: number = 1, l
     }
 }
 
-// Quick search for header/search bar - optimized for real-time
-export async function quickSearch(query: string, limit: number = 5) {
+// Quick search for real-time results - optimized for performance
+export async function quickSearch(query: string, limit: number = 6) {
     try {
         if (!query.trim()) return []
 
@@ -105,12 +104,12 @@ export async function quickSearch(query: string, limit: number = 5) {
             limit: limit.toString()
         })
 
-        const response = await fetch(`${API_BASE_URL}/products/search?${searchParams.toString()}`, {
+        const response = await fetch(`${API_BASE_URL}/products/filter?${searchParams.toString()}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
             },
-            // Very short cache for quick search
+            // Short cache for quick search
             next: { revalidate: 10 }
         })
 
