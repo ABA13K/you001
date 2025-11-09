@@ -2,13 +2,50 @@
 'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
+import { useAuth } from '@/context/auth-context'
 import SearchBar from '@/components/search/search-bar'
 import CartIcon from '@/components/cart/cart-icon'
-import { User, Heart, Menu } from 'lucide-react'
-import { useState } from 'react'
+import { User, LogOut, Settings, Heart, Menu } from 'lucide-react'
+
+function UserMenu() {
+  const { state, dispatch } = useAuth()
+
+  if (!state.isAuthenticated || !state.user) {
+    return (
+      <div className="flex items-center space-x-4">
+        <Link
+          href="/login"
+          className="text-gray-600 hover:text-blue-600 transition-colors"
+        >
+          Sign In
+        </Link>
+        <Link
+          href="/register"
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Sign Up
+        </Link>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-center space-x-3">
+      <div className="text-right">
+        <p className="text-sm font-medium text-gray-900">{state.user.name}</p>
+        <p className="text-xs text-gray-500">{state.user.email}</p>
+      </div>
+      <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+        {state.user.name.charAt(0).toUpperCase()}
+      </div>
+    </div>
+  )
+}
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const { state } = useAuth()
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
@@ -41,12 +78,16 @@ export default function Header() {
               <Heart size={24} />
             </Link>
             
-            <Link
-              href="/account"
-              className="p-2 text-gray-600 hover:text-blue-600 transition-colors"
-            >
-              <User size={24} />
-            </Link>
+            {state.isAuthenticated ? (
+              <Link
+                href="/account"
+                className="p-2 text-gray-600 hover:text-blue-600 transition-colors"
+              >
+                <User size={24} />
+              </Link>
+            ) : (
+              <UserMenu />
+            )}
             
             <CartIcon />
           </div>
@@ -90,6 +131,24 @@ export default function Header() {
                 >
                   About
                 </Link>
+                {!state.isAuthenticated && (
+                  <>
+                    <Link 
+                      href="/login" 
+                      className="text-gray-700 hover:text-blue-600 font-medium py-2"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Sign In
+                    </Link>
+                    <Link 
+                      href="/register" 
+                      className="text-gray-700 hover:text-blue-600 font-medium py-2"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Sign Up
+                    </Link>
+                  </>
+                )}
               </nav>
             </div>
           </div>
