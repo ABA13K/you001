@@ -1,7 +1,6 @@
-// components/auth/login-form.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react' // Add useEffect
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthOperations } from '@/hooks/use-auth-operations'
@@ -9,7 +8,15 @@ import { Eye, EyeOff, Loader2 } from 'lucide-react'
 
 export default function LoginForm() {
   const router = useRouter()
-  const { login, isLoading, error, clearError, needsVerification } = useAuthOperations()
+  const { 
+    login, 
+    isLoading, 
+    error, 
+    clearError, 
+    needsVerification, 
+    isAuthenticated, // Add this
+    user // Add this
+  } = useAuthOperations()
   
   const [formData, setFormData] = useState({
     email: '',
@@ -17,7 +24,14 @@ export default function LoginForm() {
   })
   const [showPassword, setShowPassword] = useState(false)
 
-  // Redirect if verification is needed (handled by the hook)
+  // Add useEffect to handle successful login redirect
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      router.push('/') // or router.push('/dashboard') depending on your app
+    }
+  }, [isAuthenticated, user, router])
+
+  // Redirect if verification is needed
   if (needsVerification) {
     router.push('/verify')
     return null
@@ -35,7 +49,7 @@ export default function LoginForm() {
     
     try {
       await login(formData)
-      // User will be automatically redirected on success
+      // The useEffect above will handle the redirect
     } catch (error) {
       // Error is handled in the hook
     }

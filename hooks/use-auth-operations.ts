@@ -72,12 +72,14 @@ export function useAuthOperations() {
                 localStorage.setItem('token', response.access_token)
 
                 dispatch({ type: 'SET_USER', payload: response.user })
+                dispatch({ type: 'SET_LOADING', payload: false }) // Add this line
                 return response
             }
 
             return response
         } catch (error: any) {
             const message = error instanceof Error ? error.message : 'Login failed'
+            dispatch({ type: 'SET_LOADING', payload: false }) // Add this line
 
             // Check if it's a verification error
             if (error.message?.includes('verification') || error.message?.includes('confirmation code')) {
