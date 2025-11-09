@@ -3,7 +3,7 @@ export interface User {
     id: string
     name: string
     email: string
-    mobile: string
+    phone: string // Changed from 'mobile' to 'phone' to match API
     birth_date: string
     gender: string
     address: string
@@ -11,6 +11,7 @@ export interface User {
     created_at: string
     updated_at: string
 }
+
 
 export interface RegisterData {
     name: string
@@ -58,4 +59,43 @@ export interface AuthState {
     error: string | null
     needsVerification: boolean
     verificationEmail: string | null
+}
+export interface AccountUpdateData {
+    name?: string
+    phone?: string // Changed from 'mobile' to 'phone'
+    birth_date?: string
+    gender?: string
+    address?: string
+    current_password?: string
+    password?: string
+    password_confirmation?: string
+}
+
+export interface Order {
+    id: string
+    order_number: string
+    status: string
+    total_amount: number
+    item_count: number
+    created_at: string
+    updated_at: string
+}
+
+export interface OrderDetail {
+    id: string
+    order_number: string
+    status: string
+    total_amount: number
+    items: OrderItem[]
+    shipping_address: string
+    created_at: string
+    updated_at: string
+}
+
+export interface OrderItem {
+    id: string
+    product_name: string
+    quantity: number
+    price: number
+    total: number
 }
