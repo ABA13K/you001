@@ -44,11 +44,11 @@ export interface ResetPasswordData {
     confirm_password: string
 }
 
+// Update AuthResponse to match your API response
 export interface AuthResponse {
     message: string
-    user?: User
-    access_token?: string
-    token_type?: string
+    data: User // API returns user in 'data' field
+    token: string // API returns 'token' not 'access_token'
 }
 
 export interface AuthState {

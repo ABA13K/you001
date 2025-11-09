@@ -40,27 +40,38 @@ async function authFetch(endpoint: string, options: RequestInit = {}): Promise<a
 }
 
 // Register new user
+export async function loginUser(loginData: LoginData): Promise<AuthResponse> {
+    const response = await authFetch('/login', {
+        method: 'POST',
+        body: JSON.stringify(loginData),
+    })
+
+    console.log('🔑 Raw login response:', response)
+
+    // The response already matches AuthResponse interface
+    return response
+}
+
+// Register new user
 export async function registerUser(userData: RegisterData): Promise<AuthResponse> {
-    return authFetch('/register', {
+    const response = await authFetch('/register', {
         method: 'POST',
         body: JSON.stringify(userData),
     })
+
+    console.log('🔑 Raw register response:', response)
+    return response
 }
 
 // Verify account
 export async function verifyAccount(verificationData: VerificationData): Promise<AuthResponse> {
-    return authFetch('/account-verification', {
+    const response = await authFetch('/account-verification', {
         method: 'POST',
         body: JSON.stringify(verificationData),
     })
-}
 
-// Login user
-export async function loginUser(loginData: LoginData): Promise<AuthResponse> {
-    return authFetch('/login', {
-        method: 'POST',
-        body: JSON.stringify(loginData),
-    })
+    console.log('🔑 Raw verification response:', response)
+    return response
 }
 
 // Forgot password - send recovery code
