@@ -87,17 +87,23 @@ export function useAuthOperations() {
     // Update register function as well
     const register = useCallback(async (userData: RegisterData) => {
         dispatch({ type: 'SET_LOADING', payload: true })
+        console.log('🚀 Starting registration process...')
 
         try {
             const response = await registerUser(userData)
+            console.log('✅ Registration API response:', response)
+
             dispatch({ type: 'SET_VERIFICATION_EMAIL', payload: userData.email })
             dispatch({ type: 'SET_NEEDS_VERIFICATION', payload: true })
             dispatch({ type: 'SET_LOADING', payload: false })
+            console.log('✅ Registration successful, should redirect to verification')
+
             return response
         } catch (error) {
+            console.error('❌ Registration error:', error)
             const message = error instanceof Error ? error.message : 'Registration failed'
             dispatch({ type: 'SET_ERROR', payload: message })
-            dispatch({ type: 'SET_LOADING', payload: false })
+            dispatch({ type: 'SET_LOADING', payload: false }) // Add this missing line
             throw error
         }
     }, [dispatch])

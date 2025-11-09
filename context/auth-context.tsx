@@ -4,11 +4,6 @@
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react'
 import { User, AuthState } from '@/types/auth'
 
-// Update AuthState to include isInitialized
-interface ExtendedAuthState extends AuthState {
-  isInitialized: boolean
-}
-
 type AuthAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_USER'; payload: User | null }
@@ -16,19 +11,19 @@ type AuthAction =
   | { type: 'SET_NEEDS_VERIFICATION'; payload: boolean }
   | { type: 'SET_VERIFICATION_EMAIL'; payload: string | null }
   | { type: 'LOGOUT' }
-  | { type: 'SET_INITIALIZED' } // Add this action
+  | { type: 'SET_INITIALIZED' }
 
-const initialState: ExtendedAuthState = {
+const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
   isLoading: true, // Start with true
   error: null,
   needsVerification: false,
   verificationEmail: null,
-  isInitialized: false, // Add this
+  isInitialized: false,
 }
 
-function authReducer(state: ExtendedAuthState, action: AuthAction): ExtendedAuthState {
+function authReducer(state: AuthState, action: AuthAction): AuthState {
   switch (action.type) {
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload, error: null }
@@ -40,7 +35,7 @@ function authReducer(state: ExtendedAuthState, action: AuthAction): ExtendedAuth
         isLoading: false,
         error: null,
         needsVerification: false,
-        isInitialized: true // Mark as initialized when user is set
+        isInitialized: true
       }
     case 'SET_ERROR':
       return { ...state, error: action.payload, isLoading: false }
@@ -51,9 +46,7 @@ function authReducer(state: ExtendedAuthState, action: AuthAction): ExtendedAuth
     case 'LOGOUT':
       return { 
         ...initialState,
-        user: null,
-        isAuthenticated: false,
-        isInitialized: true // Mark as initialized even on logout
+        isInitialized: true // Keep initialized true on logout
       }
     case 'SET_INITIALIZED':
       return {
@@ -67,7 +60,7 @@ function authReducer(state: ExtendedAuthState, action: AuthAction): ExtendedAuth
 }
 
 const AuthContext = createContext<{
-  state: ExtendedAuthState
+  state: AuthState
   dispatch: React.Dispatch<AuthAction>
 }>({
   state: initialState,
@@ -84,15 +77,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const savedUser = localStorage.getItem('user')
         const token = localStorage.getItem('token')
         
+        console.log('🔍 Checking localStorage for auth data...')
+        console.log('📁 User in localStorage:', savedUser ? 'Exists' : 'None')
+        console.log('🔑 Token in localStorage:', token ? 'Exists' : 'None')
+        
         if (savedUser && token) {
           const user = JSON.parse(savedUser)
+          console.log('✅ Found user in localStorage, setting auth state:', user)
           dispatch({ type: 'SET_USER', payload: user })
         } else {
-          // No user in storage, mark as initialized
+          console.log('ℹ️ No auth data in localStorage, marking as initialized')
           dispatch({ type: 'SET_INITIALIZED' })
         }
       } catch (error) {
-        console.error('Error loading user from storage:', error)
+        console.error('❌ Error loading user from storage:', error)
         localStorage.removeItem('user')
         localStorage.removeItem('token')
         dispatch({ type: 'SET_INITIALIZED' })

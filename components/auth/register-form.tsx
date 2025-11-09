@@ -1,14 +1,14 @@
 // components/auth/register-form.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthOperations } from '@/hooks/use-auth-operations'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 
 export default function RegisterForm() {
   const router = useRouter()
-  const { register, isLoading, error, clearError } = useAuthOperations()
+  const { register, isLoading, error, clearError, needsVerification, verificationEmail } = useAuthOperations()
   
   const [formData, setFormData] = useState({
     name: '',
@@ -23,6 +23,23 @@ export default function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
+  // Add comprehensive debugging
+  useEffect(() => {
+    console.log('🔍 Register Form State:', {
+      isLoading,
+      error,
+      needsVerification,
+      verificationEmail
+    })
+
+    if (needsVerification && verificationEmail) {
+      console.log('🔄 Conditions met for redirect: needsVerification && verificationEmail')
+      console.log('📧 Verification email:', verificationEmail)
+      console.log('🔄 Redirecting to verification page...')
+      router.push('/verify')
+    }
+  }, [needsVerification, verificationEmail, isLoading, error, router])
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
@@ -32,12 +49,18 @@ export default function RegisterForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('📝 Form submitted with data:', { 
+      ...formData, 
+      password: '***', 
+      password_confirmation: '***' 
+    })
     
     try {
-      await register(formData)
-      // The user will be redirected to verification page via the hook
+      console.log('🚀 Calling register function...')
+      const result = await register(formData)
+      console.log('✅ Register function completed, result:', result)
     } catch (error) {
-      // Error is handled in the hook
+      console.error('💥 Register function failed:', error)
     }
   }
 
@@ -52,6 +75,7 @@ export default function RegisterForm() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Your existing form fields remain the same */}
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
             Full Name *
@@ -127,6 +151,7 @@ export default function RegisterForm() {
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
+            <option value="">Select Gender</option>
             <option value="male">Male</option>
             <option value="female">Female</option>
           </select>

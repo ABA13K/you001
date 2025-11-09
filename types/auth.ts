@@ -59,6 +59,7 @@ export interface AuthState {
     error: string | null
     needsVerification: boolean
     verificationEmail: string | null
+    isInitialized: boolean // Add this line
 }
 export interface AccountUpdateData {
     name?: string

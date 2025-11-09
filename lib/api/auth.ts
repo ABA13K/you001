@@ -54,12 +54,20 @@ export async function loginUser(loginData: LoginData): Promise<AuthResponse> {
 
 // Register new user
 export async function registerUser(userData: RegisterData): Promise<AuthResponse> {
+    console.log('📤 Sending registration data:', userData)
+
     const response = await authFetch('/register', {
         method: 'POST',
         body: JSON.stringify(userData),
     })
 
-    console.log('🔑 Raw register response:', response)
+    console.log('📥 Registration API response:', response)
+
+    // Make sure the response structure is correct
+    if (!response.data || !response.message) {
+        console.warn('⚠️ Unexpected registration response structure:', response)
+    }
+
     return response
 }
 
