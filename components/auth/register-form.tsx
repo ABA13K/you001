@@ -24,21 +24,21 @@ export default function RegisterForm() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   // Add comprehensive debugging
-  useEffect(() => {
-    console.log('🔍 Register Form State:', {
-      isLoading,
-      error,
-      needsVerification,
-      verificationEmail
-    })
+ useEffect(() => {
+  console.log('🔍 Register Form State:', {
+    isLoading,
+    error,
+    needsVerification,
+    verificationEmail
+  })
 
-    if (needsVerification && verificationEmail) {
-      console.log('🔄 Conditions met for redirect: needsVerification && verificationEmail')
-      console.log('📧 Verification email:', verificationEmail)
-      console.log('🔄 Redirecting to verification page...')
-      router.push('/verify')
-    }
-  }, [needsVerification, verificationEmail, isLoading, error, router])
+  if (needsVerification && verificationEmail && !isLoading) {
+    console.log('🔄 Conditions met for redirect: needsVerification && verificationEmail && !isLoading')
+    console.log('📧 Verification email:', verificationEmail)
+    console.log('🔄 Redirecting to verification page...')
+    router.push('/verify')
+  }
+}, [needsVerification, verificationEmail, isLoading, error, router])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target

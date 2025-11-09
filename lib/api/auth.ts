@@ -73,12 +73,15 @@ export async function registerUser(userData: RegisterData): Promise<AuthResponse
 
 // Verify account
 export async function verifyAccount(verificationData: VerificationData): Promise<AuthResponse> {
+    console.log('📤 Sending verification data:', verificationData)
+
     const response = await authFetch('/account-verification', {
         method: 'POST',
         body: JSON.stringify(verificationData),
     })
 
-    console.log('🔑 Raw verification response:', response)
+    console.log('📥 Verification API response:', response)
+
     return response
 }
 

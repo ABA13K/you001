@@ -59,24 +59,32 @@ export function useAuthOperations() {
     // Also update the verify function
     const verify = useCallback(async (verificationData: VerificationData) => {
         dispatch({ type: 'SET_LOADING', payload: true })
+        console.log('🚀 Starting verification process...')
 
         try {
             const response = await verifyAccount(verificationData)
-            console.log('✅ Verification response:', response)
+            console.log('✅ Verification API response:', response)
 
             if (response.data && response.token) {
                 // Save to localStorage
                 localStorage.setItem('user', JSON.stringify(response.data))
                 localStorage.setItem('token', response.token)
+                console.log('✅ User data saved to localStorage after verification')
 
+                // Update auth state
                 dispatch({ type: 'SET_USER', payload: response.data })
                 dispatch({ type: 'SET_NEEDS_VERIFICATION', payload: false })
                 dispatch({ type: 'SET_VERIFICATION_EMAIL', payload: null })
                 dispatch({ type: 'SET_LOADING', payload: false })
+                console.log('✅ Auth state updated after verification')
+            } else {
+                console.warn('⚠️ Verification response missing user data or token:', response)
+                throw new Error('Invalid verification response from server')
             }
 
             return response
         } catch (error) {
+            console.error('❌ Verification error:', error)
             const message = error instanceof Error ? error.message : 'Verification failed'
             dispatch({ type: 'SET_ERROR', payload: message })
             dispatch({ type: 'SET_LOADING', payload: false })

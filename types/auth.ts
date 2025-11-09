@@ -48,8 +48,9 @@ export interface ResetPasswordData {
 // Update AuthResponse to match your API response
 export interface AuthResponse {
     message: string
-    data: User // API returns user in 'data' field
-    token: string // API returns 'token' not 'access_token'
+    data?: User
+    token?: string
+    token_type?: string
 }
 
 export interface AuthState {
@@ -99,4 +100,8 @@ export interface OrderItem {
     quantity: number
     price: number
     total: number
+}
+export interface VerificationData {
+    email: string
+    recovery_code: string
 }
