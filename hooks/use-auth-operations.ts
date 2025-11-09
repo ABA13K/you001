@@ -156,6 +156,7 @@ export function useAuthOperations() {
         error: state.error,
         needsVerification: state.needsVerification,
         verificationEmail: state.verificationEmail,
+        isInitialized: state.isInitialized,
 
         // Actions
         register,

@@ -21,7 +21,14 @@ type ActiveTab = 'profile' | 'password' | 'orders'
 
 export default function AccountPage() {
   const router = useRouter()
-  const { user: authUser, isAuthenticated, isLoading: authLoading, logout } = useAuthOperations()
+  const { 
+    user: authUser, 
+    isAuthenticated, 
+    isLoading: authLoading, 
+    logout,
+    isInitialized // Add this
+  } = useAuthOperations()
+  
   const { getProfile, isLoading: profileLoading } = useAccount()
   
   const [activeTab, setActiveTab] = useState<ActiveTab>('profile')
@@ -29,15 +36,22 @@ export default function AccountPage() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
+    // Wait until auth is initialized before checking authentication
+    if (!isInitialized) {
+      return
+    }
+
+    // Only redirect if we're sure user is not authenticated
+    if (!isAuthenticated) {
       router.push('/login')
       return
     }
 
+    // Load profile data if authenticated
     if (isAuthenticated && authUser) {
       loadUserProfile()
     }
-  }, [isAuthenticated, authLoading, authUser, router])
+  }, [isAuthenticated, authUser, router, isInitialized])
 
   const loadUserProfile = async () => {
     try {
@@ -55,7 +69,20 @@ export default function AccountPage() {
     router.push('/')
   }
 
-  if (authLoading || isLoading) {
+  // Show loading while auth is being initialized
+  if (!isInitialized || authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 size={32} className="animate-spin mx-auto mb-4" />
+          <p>Checking authentication...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show loading while fetching profile data
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
