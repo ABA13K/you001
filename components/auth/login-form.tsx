@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react' // Add useEffect
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthOperations } from '@/hooks/use-auth-operations'
@@ -14,8 +14,8 @@ export default function LoginForm() {
     error, 
     clearError, 
     needsVerification, 
-    isAuthenticated, // Add this
-    user // Add this
+    isAuthenticated,
+    user
   } = useAuthOperations()
   
   const [formData, setFormData] = useState({
@@ -24,18 +24,32 @@ export default function LoginForm() {
   })
   const [showPassword, setShowPassword] = useState(false)
 
-  // Add useEffect to handle successful login redirect
+  // Debug logs
   useEffect(() => {
-    if (isAuthenticated && user) {
-      router.push('/') // or router.push('/dashboard') depending on your app
-    }
-  }, [isAuthenticated, user, router])
+    console.log('🔍 Login Form State:', {
+      isAuthenticated,
+      user,
+      isLoading,
+      needsVerification,
+      error
+    })
+  }, [isAuthenticated, user, isLoading, needsVerification, error])
 
   // Redirect if verification is needed
-  if (needsVerification) {
-    router.push('/verify')
-    return null
-  }
+  useEffect(() => {
+    if (needsVerification) {
+      console.log('🔄 Redirecting to verification page...')
+      router.push('/verify')
+    }
+  }, [needsVerification, router])
+
+  // Redirect if authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      console.log('🔄 Redirecting to home page...')
+      router.push('/')
+    }
+  }, [isAuthenticated, user, router])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -46,13 +60,24 @@ export default function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('📝 Form submitted with data:', { ...formData, password: '***' })
     
     try {
-      await login(formData)
-      // The useEffect above will handle the redirect
+      const result = await login(formData)
+      console.log('🎉 Login successful, result:', result)
     } catch (error) {
-      // Error is handled in the hook
+      console.error('💥 Login failed:', error)
     }
+  }
+
+  // Show loading state while checking authentication
+  if (isLoading && !error) {
+    return (
+      <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6 text-center">
+        <Loader2 size={32} className="animate-spin mx-auto mb-4" />
+        <p>Checking authentication...</p>
+      </div>
+    )
   }
 
   return (
