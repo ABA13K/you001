@@ -161,7 +161,7 @@ export default function Header() {
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <Heart size={20} />
-                    <span>Favorites</span>
+                   
                     {favorites.length > 0 && (
                       <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                         {favorites.length}
