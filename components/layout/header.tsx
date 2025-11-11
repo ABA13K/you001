@@ -87,7 +87,6 @@ export default function Header() {
                 className="flex items-center space-x-1 text-gray-700 hover:text-red-600 transition-colors relative"
               >
                 <Heart size={20} />
-                <span className="hidden sm:inline">Favorites</span>
                 {favorites.length > 0 && (
                   <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center absolute -top-2 -right-2">
                     {favorites.length}
