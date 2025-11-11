@@ -84,18 +84,27 @@ export function useFavorites() {
     }, [])
 
     // Toggle favorite status
+    // In hooks/use-favorites.ts - Update toggleFavorite function
     const toggleFavorite = useCallback(async (productId: string) => {
+        console.log(`🔄 Toggling favorite for product: ${productId}`)
+
         try {
             const isCurrentlyFavorite = favorites.some(item => item.product.id === productId)
+            console.log(`📊 Current favorite status: ${isCurrentlyFavorite}`)
 
             if (isCurrentlyFavorite) {
-                await removeFavorite(productId)
+                console.log(`🗑️ Removing from favorites: ${productId}`)
+                const result = await removeFavorite(productId)
+                console.log(`✅ Remove result:`, result)
                 return { action: 'removed' as const }
             } else {
-                await addFavorite(productId)
+                console.log(`➕ Adding to favorites: ${productId}`)
+                const result = await addFavorite(productId)
+                console.log(`✅ Add result:`, result)
                 return { action: 'added' as const }
             }
         } catch (error) {
+            console.error('❌ Toggle favorite error:', error)
             throw error
         }
     }, [favorites, addFavorite, removeFavorite])
