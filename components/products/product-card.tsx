@@ -3,25 +3,22 @@
 
 import { SearchProduct } from '@/types/search'
 import Link from 'next/link'
-import { Star, Heart, ShoppingCart } from 'lucide-react'
+import { Star, ShoppingCart } from 'lucide-react'
 import { useState } from 'react'
+import FavoriteButton from '@/components/products/favorite-button'
 
 interface ProductCardProps {
   product: SearchProduct
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-  const [isWishlisted, setIsWishlisted] = useState(false)
   const [isAddingToCart, setIsAddingToCart] = useState(false)
 
   const handleAddToCart = async () => {
     setIsAddingToCart(true)
+    // Simulate API call - replace with your actual cart API
     await new Promise(resolve => setTimeout(resolve, 500))
     setIsAddingToCart(false)
-  }
-
-  const handleWishlist = () => {
-    setIsWishlisted(!isWishlisted)
   }
 
   // Calculate discount if available
@@ -57,16 +54,12 @@ export default function ProductCard({ product }: ProductCardProps) {
           New
         </div>
 
-        {/* Action Buttons */}
+        {/* Favorite Button */}
         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <button
-            onClick={handleWishlist}
-            className={`p-2 rounded-full bg-white shadow-md hover:shadow-lg transition-all ${
-              isWishlisted ? 'text-red-500' : 'text-gray-600'
-            }`}
-          >
-            <Heart size={18} fill={isWishlisted ? 'currentColor' : 'none'} />
-          </button>
+          <FavoriteButton 
+            productId={product.id.toString()} 
+            size={18}
+          />
         </div>
 
         {/* Add to Cart Button */}
@@ -126,7 +119,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 </span>
               )}
             </>
-          ) : (
+           ): (
             <span className="text-lg font-bold text-gray-900">
               ${product.original_price}
             </span>
