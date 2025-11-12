@@ -134,7 +134,7 @@ export default function FavoritesPage() {
 
                   <div className="mt-4 flex space-x-2">
                     <Link
-                      href={`/products/${item.product.id}`}
+                      href={`/product/${item.product.id}`}
                       className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md text-center hover:bg-blue-700 transition-colors"
                     >
                       View Product
