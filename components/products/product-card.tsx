@@ -8,9 +8,16 @@ import { useState } from 'react'
 import FavoriteButton from '@/components/products/favorite-button'
 
 interface ProductCardProps {
-  product: SearchProduct
+  product: {
+    id: number
+    name: string
+    original_price: string
+    discount_percentage: string
+    price_after_discount: number
+    total_rating: number
+    image: string
+  }
 }
-
 export default function ProductCard({ product }: ProductCardProps) {
   const [isAddingToCart, setIsAddingToCart] = useState(false)
 
