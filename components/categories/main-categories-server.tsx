@@ -9,9 +9,9 @@ export default async function MainCategoriesServer() {
     const response = await getMainCategories()
     const categories = response.data
 
-return (
- <section className="bg-white py-12">
-     <div className="container mx-auto px-4">
+    return (
+      <section className="bg-white py-12">
+        <div className="container mx-auto px-4">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900">Shop by Category</h2>
             <p className="text-gray-600 mt-2">
@@ -19,21 +19,23 @@ return (
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-8">
             {categories.map((category) => (
               <Link
                 key={category.id}
                 href={`/category/${category.id}`}
                 className="group text-center"
               >
-                <div className="relative aspect-square mb-3 overflow-hidden rounded-lg bg-gray-100">
+                <div className="relative aspect-square mb-4 overflow-hidden rounded-full bg-gray-100 shadow-lg hover:shadow-xl transition-all duration-300 group-hover:shadow-2xl">
                   <Image
                     src={category.image}
                     alt={category.name}
                     fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="object-cover group-hover:scale-110 transition-transform duration-300"
                     sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
                   />
+                  {/* Optional overlay for better image contrast */}
+                  <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition-opacity duration-300 rounded-full" />
                 </div>
                 <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors mb-1">
                   {category.name}
