@@ -1,8 +1,7 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 // components/products/comments-section.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useComments } from '@/hooks/use-comments'
 import { useAuthOperations } from '@/hooks/use-auth-operations'
 import CommentList from './comment-list'
@@ -17,7 +16,6 @@ interface CommentsSectionProps {
 export default function CommentsSection({ productId, productName }: CommentsSectionProps) {
   const { comments, isLoading, error, hasMore, loadMoreComments, loadCommentsPublic, loadComments, addComment, updateComment, deleteComment } = useComments()
   const { isAuthenticated } = useAuthOperations()
-  const [activeTab, setActiveTab] = useState<'comments' | 'add'>('comments')
   const [apiError, setApiError] = useState<string | null>(null)
 
   // Safe array utility
@@ -27,9 +25,42 @@ export default function CommentsSection({ productId, productName }: CommentsSect
 
   const commentsArray = safeArray(comments)
   
-  // Find user's existing comment
-  const userComment = commentsArray.find(comment => comment.is_mine)
+  // Memoized user comment detection
+  const userComment = useMemo(() => 
+    commentsArray.find(comment => comment.is_mine === true),
+    [commentsArray]
+  )
 
+  // Determine initial active tab
+  const getInitialActiveTab = (): 'comments' | 'add' => {
+    return 'comments' // Always start with comments tab for better UX
+  }
+
+  const [activeTab, setActiveTab] = useState<'comments' | 'add'>(getInitialActiveTab)
+
+  // Memoized tab configuration
+  const tabConfig = useMemo(() => {
+    if (!isAuthenticated) {
+      return {
+        showAddTab: false,
+        addTabLabel: 'Write a Review',
+      }
+    }
+
+    if (userComment) {
+      return {
+        showAddTab: true,
+        addTabLabel: 'Edit Your Review',
+      }
+    }
+
+    return {
+      showAddTab: true,
+      addTabLabel: 'Write a Review',
+    }
+  }, [isAuthenticated, userComment])
+
+  // Load comments data
   useEffect(() => {
     const loadCommentsData = async () => {
       setApiError(null)
@@ -50,12 +81,22 @@ export default function CommentsSection({ productId, productName }: CommentsSect
     loadCommentsData()
   }, [productId, isAuthenticated, loadComments, loadCommentsPublic])
 
-  // Auto-switch to comments tab if user has already reviewed
-  useEffect(() => {
-    if (userComment && activeTab === 'add') {
-      setActiveTab('comments')
+  // Handle user navigation to add tab when they already have a comment
+  const handleAddTabClick = () => {
+    if (userComment) {
+      // If user has a comment and clicks "Edit Your Review", ensure we're on add tab
+      setActiveTab('add')
+    } else {
+      setActiveTab('add')
     }
-  }, [userComment, activeTab])
+  }
+
+  // Handle comment added callback
+  const handleCommentAdded = () => {
+    // Reload comments and switch to comments tab
+    loadComments(productId)
+    setActiveTab('comments')
+  }
 
   // Calculate average rating
   const averageRating = commentsArray.length > 0 
@@ -176,28 +217,16 @@ export default function CommentsSection({ productId, productName }: CommentsSect
             >
               All Reviews ({commentsArray.length})
             </button>
-            {isAuthenticated && !userComment && (
+            {tabConfig.showAddTab && (
               <button
-                onClick={() => setActiveTab('add')}
+                onClick={handleAddTabClick}
                 className={`py-2 px-4 border-b-2 font-medium text-sm ${
                   activeTab === 'add'
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Write a Review
-              </button>
-            )}
-            {isAuthenticated && userComment && (
-              <button
-                onClick={() => setActiveTab('add')}
-                className={`py-2 px-4 border-b-2 font-medium text-sm ${
-                  activeTab === 'add'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Edit Your Review
+                {tabConfig.addTabLabel}
               </button>
             )}
           </nav>
@@ -218,11 +247,7 @@ export default function CommentsSection({ productId, productName }: CommentsSect
           <AddCommentForm
             productId={parseInt(productId)}
             productName={productName}
-            onCommentAdded={() => {
-              setActiveTab('comments')
-              // Reload comments to show the updated list
-              loadComments(productId)
-            }}
+            onCommentAdded={handleCommentAdded}
           />
         )}
       </div>
