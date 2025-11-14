@@ -81,19 +81,19 @@ export default function ProductPage() {
 
         {/* Product Details Tabs */}
         <div className="mt-8 bg-white rounded-lg shadow-sm">
-<div className="border-b border-gray-200">
-  <nav className="flex -mb-px">
-    <button className="border-b-2 border-blue-500 text-blue-600 py-4 px-6 text-sm font-medium">
-      Description
-    </button>
-    <button className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-6 text-sm font-medium">
-      Specifications
-    </button>
-    <button className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-6 text-sm font-medium">
-      Reviews ({product.total_rating > 0 ? 'Some' : '0'})
-    </button>
-  </nav>
-</div>
+          <div className="border-b border-gray-200">
+            <nav className="flex -mb-px">
+              <button className="border-b-2 border-blue-500 text-blue-600 py-4 px-6 text-sm font-medium">
+                Description
+              </button>
+              <button className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-6 text-sm font-medium">
+                Specifications
+              </button>
+              <button className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-6 text-sm font-medium">
+                Reviews ({product.total_rating || 0})
+              </button>
+            </nav>
+          </div>
           <div className="p-6">
             {/* Description */}
             <div className="prose max-w-none">
@@ -125,13 +125,14 @@ export default function ProductPage() {
             <SimilarProducts products={similarProducts} />
           </div>
         )}
-        {/* Add Comments Section */}
-<div className="mt-8">
- <CommentsSection 
-  productId={productId} 
-  productName={product.name} 
-/>
-</div>
+
+        {/* Comments Section */}
+        <div className="mt-8">
+          <CommentsSection 
+            productId={productId} 
+            productName={product.name} 
+          />
+        </div>
       </div>
     </div>
   )

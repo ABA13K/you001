@@ -1,4 +1,4 @@
-// hooks/use-comments.ts - Add fallback to public API
+// hooks/use-comments.ts
 import { useState, useCallback } from 'react'
 import {
     getProductCommentsPublic,
@@ -95,7 +95,6 @@ export function useComments() {
         }
     }, [])
 
-    // ... rest of the hook remains the same
     // Add new comment/rating
     const addComment = useCallback(async (productId: number, comment: string, score: number) => {
         setIsLoading(true)

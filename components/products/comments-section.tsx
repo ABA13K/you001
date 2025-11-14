@@ -1,4 +1,5 @@
-// components/products/comments-section.tsx - Updated version
+/* eslint-disable react-hooks/set-state-in-effect */
+// components/products/comments-section.tsx
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -25,6 +26,9 @@ export default function CommentsSection({ productId, productName }: CommentsSect
   }
 
   const commentsArray = safeArray(comments)
+  
+  // Find user's existing comment
+  const userComment = commentsArray.find(comment => comment.is_mine)
 
   useEffect(() => {
     const loadCommentsData = async () => {
@@ -45,6 +49,13 @@ export default function CommentsSection({ productId, productName }: CommentsSect
 
     loadCommentsData()
   }, [productId, isAuthenticated, loadComments, loadCommentsPublic])
+
+  // Auto-switch to comments tab if user has already reviewed
+  useEffect(() => {
+    if (userComment && activeTab === 'add') {
+      setActiveTab('comments')
+    }
+  }, [userComment, activeTab])
 
   // Calculate average rating
   const averageRating = commentsArray.length > 0 
@@ -78,6 +89,12 @@ export default function CommentsSection({ productId, productName }: CommentsSect
                 </div>
                 <span className="text-gray-500">•</span>
                 <span className="text-gray-600">{commentsArray.length} reviews</span>
+                {userComment && (
+                  <>
+                    <span className="text-gray-500">•</span>
+                    <span className="text-blue-600 text-sm font-medium">You&apos;ve reviewed this product</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -159,7 +176,7 @@ export default function CommentsSection({ productId, productName }: CommentsSect
             >
               All Reviews ({commentsArray.length})
             </button>
-            {isAuthenticated && (
+            {isAuthenticated && !userComment && (
               <button
                 onClick={() => setActiveTab('add')}
                 className={`py-2 px-4 border-b-2 font-medium text-sm ${
@@ -169,6 +186,18 @@ export default function CommentsSection({ productId, productName }: CommentsSect
                 }`}
               >
                 Write a Review
+              </button>
+            )}
+            {isAuthenticated && userComment && (
+              <button
+                onClick={() => setActiveTab('add')}
+                className={`py-2 px-4 border-b-2 font-medium text-sm ${
+                  activeTab === 'add'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Edit Your Review
               </button>
             )}
           </nav>
@@ -187,14 +216,14 @@ export default function CommentsSection({ productId, productName }: CommentsSect
           />
         ) : (
           <AddCommentForm
-  productId={parseInt(productId)}
-  productName={productName}
-  onCommentAdded={() => {
-    setActiveTab('comments')
-    // Reload comments to show the new one
-    loadComments(productId)
-  }}
-/>
+            productId={parseInt(productId)}
+            productName={productName}
+            onCommentAdded={() => {
+              setActiveTab('comments')
+              // Reload comments to show the updated list
+              loadComments(productId)
+            }}
+          />
         )}
       </div>
     </div>
