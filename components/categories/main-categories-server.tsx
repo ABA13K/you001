@@ -20,14 +20,11 @@ export default async function MainCategoriesServer() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-8">
-            {categories.map((category, index) => (
+            {categories.map((category) => (
               <Link
                 key={category.id}
                 href={`/category/${category.id}`}
-                className="group text-center animate-fade-in-up"
-                style={{
-                  animationDelay: `${index * 100}ms`,
-                }}
+                className="group text-center"
               >
                 <div className="relative aspect-square mb-4 overflow-hidden rounded-full bg-gray-100 shadow-lg hover:shadow-xl transition-all duration-500 ease-out group-hover:shadow-2xl transform group-hover:-translate-y-2">
                   <Image
@@ -37,16 +34,12 @@ export default async function MainCategoriesServer() {
                     className="object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
                     sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
                   />
-                  {/* Gradient overlay */}
                   <div className="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full" />
-                  
-                  {/* Pulse animation on hover */}
-                  <div className="absolute inset-0 rounded-full border-2 border-transparent group-hover:border-blue-400/30 group-hover:animate-pulse transition-all duration-300" />
+                  <div className="absolute inset-0 rounded-full border-2 border-transparent group-hover:border-blue-400/30 transition-all duration-300" />
                 </div>
                 
-                {/* Text animations */}
                 <div className="transform group-hover:translate-y-1 transition-transform duration-300">
-                  <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-all duration-300 group-hover:scale-105 inline-block">
+                  <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-all duration-300">
                     {category.name}
                   </h3>
                   <p className="text-sm text-gray-500 opacity-0 group-hover:opacity-100 transform group-hover:translate-y-0 -translate-y-2 transition-all duration-300 delay-100">
@@ -63,7 +56,7 @@ export default async function MainCategoriesServer() {
     return (
       <section className="bg-white py-12">
         <div className="container mx-auto px-4 text-center">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto transform transition-all duration-500 animate-bounce">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
             <h3 className="text-lg font-semibold text-red-800 mb-2">
               Failed to load categories
             </h3>
