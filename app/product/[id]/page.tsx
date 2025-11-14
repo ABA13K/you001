@@ -126,12 +126,12 @@ export default function ProductPage() {
           </div>
         )}
         {/* Add Comments Section */}
-{/* <div className="mt-8">
+<div className="mt-8">
   <CommentsSection 
     productId={productId} 
     productName={product.name} 
   />
-</div> */}
+</div>
       </div>
     </div>
   )
