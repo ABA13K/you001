@@ -18,6 +18,13 @@ export default function CommentsSection({ productId, productName }: CommentsSect
   const { isAuthenticated } = useAuthOperations()
   const [activeTab, setActiveTab] = useState<'comments' | 'add'>('comments')
 
+  // Safe array utility
+  const safeArray = <T,>(value: T[] | null | undefined): T[] => {
+    return Array.isArray(value) ? value : []
+  }
+
+  const commentsArray = safeArray(comments)
+
   useEffect(() => {
     // Load comments on component mount
     if (isAuthenticated) {
@@ -28,16 +35,16 @@ export default function CommentsSection({ productId, productName }: CommentsSect
   }, [productId, isAuthenticated, loadComments, loadCommentsPublic])
 
   // Calculate average rating
-  const averageRating = comments.length > 0 
-    ? comments.reduce((sum, comment) => sum + parseFloat(comment.score), 0) / comments.length
+  const averageRating = commentsArray.length > 0 
+    ? commentsArray.reduce((sum, comment) => sum + parseFloat(comment.score), 0) / commentsArray.length
     : 0
 
   // Rating distribution
   const ratingDistribution = [5, 4, 3, 2, 1].map(stars => ({
     stars,
-    count: comments.filter(comment => Math.round(parseFloat(comment.score)) === stars).length,
-    percentage: comments.length > 0 
-      ? (comments.filter(comment => Math.round(parseFloat(comment.score)) === stars).length / comments.length) * 100
+    count: commentsArray.filter(comment => Math.round(parseFloat(comment.score)) === stars).length,
+    percentage: commentsArray.length > 0 
+      ? (commentsArray.filter(comment => Math.round(parseFloat(comment.score)) === stars).length / commentsArray.length) * 100
       : 0
   }))
 
@@ -62,7 +69,7 @@ export default function CommentsSection({ productId, productName }: CommentsSect
                   </span>
                 </div>
                 <span className="text-gray-500">•</span>
-                <span className="text-gray-600">{comments.length} reviews</span>
+                <span className="text-gray-600">{commentsArray.length} reviews</span>
               </div>
             </div>
           </div>
@@ -91,7 +98,7 @@ export default function CommentsSection({ productId, productName }: CommentsSect
                 />
               ))}
             </div>
-            <p className="text-gray-600 mt-1">Based on {comments.length} reviews</p>
+            <p className="text-gray-600 mt-1">Based on {commentsArray.length} reviews</p>
           </div>
 
           {/* Rating Distribution */}
@@ -128,7 +135,7 @@ export default function CommentsSection({ productId, productName }: CommentsSect
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              All Reviews ({comments.length})
+              All Reviews ({commentsArray.length})
             </button>
             {isAuthenticated && (
               <button
@@ -148,7 +155,7 @@ export default function CommentsSection({ productId, productName }: CommentsSect
         {/* Tab Content */}
         {activeTab === 'comments' ? (
           <CommentList
-            comments={comments}
+            comments={commentsArray}
             isLoading={isLoading}
             error={error}
             hasMore={hasMore}

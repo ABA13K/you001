@@ -22,6 +22,9 @@ export default function CommentList({
   onLoadMore, 
   onDeleteComment 
 }: CommentListProps) {
+  // Ensure comments is always an array
+  const commentsArray = Array.isArray(comments) ? comments : []
+
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-md p-4">
@@ -30,7 +33,7 @@ export default function CommentList({
     )
   }
 
-  if (isLoading && comments.length === 0) {
+  if (isLoading && commentsArray.length === 0) {
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 size={32} className="animate-spin text-gray-400" />
@@ -38,7 +41,7 @@ export default function CommentList({
     )
   }
 
-  if (comments.length === 0) {
+  if (commentsArray.length === 0) {
     return (
       <div className="text-center py-12">
         <div className="text-gray-400 mb-4">
@@ -55,7 +58,7 @@ export default function CommentList({
   return (
     <div className="space-y-6">
       {/* Comments List */}
-      {comments.map((comment) => (
+      {commentsArray.map((comment) => (
         <CommentItem
           key={comment.rating_id}
           comment={comment}

@@ -15,25 +15,36 @@ export function useComments() {
     const [hasMore, setHasMore] = useState(false)
     const [nextOffset, setNextOffset] = useState<number | undefined>()
 
+    // Safe array utility
+    const safeArray = <T,>(value: T[] | null | undefined): T[] => {
+        return Array.isArray(value) ? value : []
+    }
+
     // Load comments (public - no auth required)
     const loadCommentsPublic = useCallback(async (productId: string, limit?: number, offset?: number) => {
         setIsLoading(true)
         setError(null)
         try {
             const response = await getProductCommentsPublic(productId, limit, offset)
+            console.log('📥 Public comments response:', response)
+
+            const commentsData = safeArray(response.data?.comments)
+            console.log('📊 Comments data:', commentsData)
+
             if (offset && offset > 0) {
                 // Append to existing comments for pagination
-                setComments(prev => [...prev, ...response.data.comments])
+                setComments(prev => [...prev, ...commentsData])
             } else {
                 // Replace comments for initial load
-                setComments(response.data.comments)
+                setComments(commentsData)
             }
-            setHasMore(response.data.has_more || false)
-            setNextOffset(response.data.next_offset)
-            return response.data.comments
+            setHasMore(response.data?.has_more || false)
+            setNextOffset(response.data?.next_offset)
+            return commentsData
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Failed to load comments'
             setError(message)
+            setComments([]) // Reset to empty array on error
             throw err
         } finally {
             setIsLoading(false)
@@ -46,17 +57,23 @@ export function useComments() {
         setError(null)
         try {
             const response = await getProductComments(productId, limit, offset)
+            console.log('📥 Authenticated comments response:', response)
+
+            const commentsData = safeArray(response.data)
+            console.log('📊 Comments data:', commentsData)
+
             if (offset && offset > 0) {
-                setComments(prev => [...prev, ...response.data])
+                setComments(prev => [...prev, ...commentsData])
             } else {
-                setComments(response.data)
+                setComments(commentsData)
             }
             // Note: Authenticated endpoint doesn't return pagination info
             setHasMore(false)
-            return response.data
+            return commentsData
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Failed to load comments'
             setError(message)
+            setComments([]) // Reset to empty array on error
             throw err
         } finally {
             setIsLoading(false)
@@ -95,7 +112,7 @@ export function useComments() {
             const response = await deleteProductComment(productId, ratingId)
 
             // Remove comment from local state immediately
-            setComments(prev => prev.filter(comment => comment.rating_id !== ratingId))
+            setComments(prev => safeArray(prev).filter(comment => comment.rating_id !== ratingId))
 
             return response
         } catch (err) {
@@ -123,7 +140,7 @@ export function useComments() {
     }, [])
 
     return {
-        comments,
+        comments: safeArray(comments), // Always return array
         isLoading,
         error,
         hasMore,

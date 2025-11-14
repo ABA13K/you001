@@ -4,6 +4,9 @@ import { CommentsResponse, AuthenticatedCommentsResponse, AddCommentData, AddCom
 const API_BASE_URL = 'https://aa-dev.site/you/api'
 
 // Public API - No authentication required
+// lib/api/comments.ts - Add debugging to both functions
+
+// Public API - No authentication required
 export async function getProductCommentsPublic(
     productId: string,
     limit?: number,
@@ -34,6 +37,8 @@ export async function getProductCommentsPublic(
 
         const data = await response.json()
         console.log(`📥 Public comments API response:`, data)
+        console.log(`📊 Comments data type:`, typeof data.data?.comments)
+        console.log(`📊 Is comments array?`, Array.isArray(data.data?.comments))
 
         if (!response.ok) {
             throw new Error(data.message || `HTTP error! status: ${response.status}`)
@@ -84,6 +89,8 @@ export async function getProductComments(
 
         const data = await response.json()
         console.log(`📥 Authenticated comments API response:`, data)
+        console.log(`📊 Comments data type:`, typeof data.data)
+        console.log(`📊 Is comments array?`, Array.isArray(data.data))
 
         if (!response.ok) {
             throw new Error(data.message || `HTTP error! status: ${response.status}`)
