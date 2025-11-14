@@ -24,15 +24,12 @@ export default async function MainCategoriesServer() {
               <Link
                 key={category.id}
                 href={`/category/${category.id}`}
-                className="group text-center"
+                className="group text-center animate-fade-in-up"
+                style={{
+                  animationDelay: `${index * 100}ms`,
+                }}
               >
-                <div 
-                  className="relative aspect-square mb-4 overflow-hidden rounded-full bg-gray-100 shadow-lg hover:shadow-xl transition-all duration-500 ease-out group-hover:shadow-2xl transform group-hover:-translate-y-2"
-                  style={{
-                    animationDelay: `${index * 100}ms`,
-                    animation: `fadeInUp 0.6s ease-out ${index * 100}ms both`
-                  }}
-                >
+                <div className="relative aspect-square mb-4 overflow-hidden rounded-full bg-gray-100 shadow-lg hover:shadow-xl transition-all duration-500 ease-out group-hover:shadow-2xl transform group-hover:-translate-y-2">
                   <Image
                     src={category.image}
                     alt={category.name}
@@ -41,7 +38,7 @@ export default async function MainCategoriesServer() {
                     sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
                   />
                   {/* Gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full" />
+                  <div className="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full" />
                   
                   {/* Pulse animation on hover */}
                   <div className="absolute inset-0 rounded-full border-2 border-transparent group-hover:border-blue-400/30 group-hover:animate-pulse transition-all duration-300" />
@@ -56,33 +53,6 @@ export default async function MainCategoriesServer() {
                     {category.products_count} {category.products_count === 1 ? 'product' : 'products'}
                   </p>
                 </div>
-
-                {/* Floating animation for the entire card */}
-                <style jsx>{`
-                  @keyframes fadeInUp {
-                    from {
-                      opacity: 0;
-                      transform: translateY(30px);
-                    }
-                    to {
-                      opacity: 1;
-                      transform: translateY(0);
-                    }
-                  }
-                  
-                  @keyframes float {
-                    0%, 100% {
-                      transform: translateY(0px);
-                    }
-                    50% {
-                      transform: translateY(-5px);
-                    }
-                  }
-                  
-                  .group:hover .float-animation {
-                    animation: float 2s ease-in-out infinite;
-                  }
-                `}</style>
               </Link>
             ))}
           </div>
@@ -93,12 +63,7 @@ export default async function MainCategoriesServer() {
     return (
       <section className="bg-white py-12">
         <div className="container mx-auto px-4 text-center">
-          <div 
-            className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto transform transition-all duration-500 animate-bounce"
-            style={{
-              animation: 'fadeIn 0.8s ease-out'
-            }}
-          >
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto transform transition-all duration-500 animate-bounce">
             <h3 className="text-lg font-semibold text-red-800 mb-2">
               Failed to load categories
             </h3>
@@ -106,18 +71,6 @@ export default async function MainCategoriesServer() {
               Please try refreshing the page or check your connection.
             </p>
           </div>
-          <style jsx>{`
-            @keyframes fadeIn {
-              from {
-                opacity: 0;
-                transform: scale(0.9);
-              }
-              to {
-                opacity: 1;
-                transform: scale(1);
-              }
-            }
-          `}</style>
         </div>
       </section>
     )
