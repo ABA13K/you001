@@ -1,4 +1,5 @@
-// hooks/use-comments.ts
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// hooks/use-comments.ts - Updated error handling
 import { useState, useCallback } from 'react'
 import {
     getProductCommentsPublic,
@@ -21,6 +22,14 @@ export function useComments() {
         return Array.isArray(value) ? value : []
     }
 
+    // Extract error message from API response
+    const extractErrorMessage = (error: any): string => {
+        if (typeof error === 'string') return error
+        if (error?.message) return error.message
+        if (error?.response?.data?.message) return error.response.data.message
+        return 'An unexpected error occurred'
+    }
+
     // Load comments (public - no auth required)
     const loadCommentsPublic = useCallback(async (productId: string, limit?: number, offset?: number) => {
         setIsLoading(true)
@@ -41,10 +50,10 @@ export function useComments() {
             setNextOffset(response.data?.next_offset)
             return commentsData
         } catch (err) {
-            const message = err instanceof Error ? err.message : 'Failed to load comments'
+            const message = extractErrorMessage(err)
             setError(message)
             setComments([])
-            throw err
+            throw new Error(message)
         } finally {
             setIsLoading(false)
         }
@@ -85,10 +94,10 @@ export function useComments() {
                 console.log('✅ Public comments loaded as fallback:', commentsData)
                 return commentsData
             } catch (fallbackError) {
-                const message = err instanceof Error ? err.message : 'Failed to load comments from both APIs'
+                const message = extractErrorMessage(fallbackError)
                 setError(message)
                 setComments([])
-                throw fallbackError
+                throw new Error(message)
             }
         } finally {
             setIsLoading(false)
@@ -115,9 +124,9 @@ export function useComments() {
 
             return response
         } catch (err) {
-            const message = err instanceof Error ? err.message : 'Failed to add comment'
+            const message = extractErrorMessage(err)
             setError(message)
-            throw err
+            throw new Error(message)
         } finally {
             setIsLoading(false)
         }
@@ -147,9 +156,9 @@ export function useComments() {
 
             return response
         } catch (err) {
-            const message = err instanceof Error ? err.message : 'Failed to update comment'
+            const message = extractErrorMessage(err)
             setError(message)
-            throw err
+            throw new Error(message)
         } finally {
             setIsLoading(false)
         }
@@ -170,9 +179,9 @@ export function useComments() {
 
             return response
         } catch (err) {
-            const message = err instanceof Error ? err.message : 'Failed to delete comment'
+            const message = extractErrorMessage(err)
             setError(message)
-            throw err
+            throw new Error(message)
         } finally {
             setIsLoading(false)
         }

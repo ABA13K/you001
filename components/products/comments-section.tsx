@@ -1,255 +1,322 @@
-// components/products/comments-section.tsx
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// components/products/add-comment-form.tsx
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useComments } from '@/hooks/use-comments'
-import { useAuthOperations } from '@/hooks/use-auth-operations'
-import CommentList from './comment-list'
-import AddCommentForm from './add-comment-form'
-import { MessageSquare, Star, AlertCircle } from 'lucide-react'
+import { Star, Send, Edit, CheckCircle, AlertCircle } from 'lucide-react'
 
-interface CommentsSectionProps {
-  productId: string
+interface AddCommentFormProps {
+  productId: number
   productName: string
+  onCommentAdded: () => void
 }
 
-export default function CommentsSection({ productId, productName }: CommentsSectionProps) {
-  const { comments, isLoading, error, hasMore, loadMoreComments, loadCommentsPublic, loadComments, addComment, updateComment, deleteComment } = useComments()
-  const { isAuthenticated } = useAuthOperations()
-  const [apiError, setApiError] = useState<string | null>(null)
-
-  // Safe array utility
-  const safeArray = <T,>(value: T[] | null | undefined): T[] => {
-    return Array.isArray(value) ? value : []
-  }
-
-  const commentsArray = safeArray(comments)
+export default function AddCommentForm({ productId, productName, onCommentAdded }: AddCommentFormProps) {
+  const { comments, addComment, updateComment, isLoading, error } = useComments()
+  const [rating, setRating] = useState(0)
+  const [hoverRating, setHoverRating] = useState(0)
+  const [comment, setComment] = useState('')
+  const [isSubmitted, setIsSubmitted] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
   
-  // Memoized user comment detection
-  const userComment = useMemo(() => 
-    commentsArray.find(comment => comment.is_mine === true),
-    [commentsArray]
-  )
+  // Enhanced user comment detection
+  const existingReview = comments.find(comment => {
+    console.log('🔍 AddCommentForm - Checking comment:', {
+      rating_id: comment.rating_id,
+      user_name: comment.user_name,
+      is_mine: comment.is_mine,
+      has_comment: comment.has_comment
+    })
+    return comment.is_mine === true
+  })
 
-  // Determine initial active tab
-  const getInitialActiveTab = (): 'comments' | 'add' => {
-    return 'comments' // Always start with comments tab for better UX
-  }
+  console.log('👤 AddCommentForm - Existing review:', existingReview)
 
-  const [activeTab, setActiveTab] = useState<'comments' | 'add'>(getInitialActiveTab)
+  // If user already has a review, always show edit mode
+  const [isEditing, setIsEditing] = useState(!!existingReview)
 
-  // Memoized tab configuration
-  const tabConfig = useMemo(() => {
-    if (!isAuthenticated) {
-      return {
-        showAddTab: false,
-        addTabLabel: 'Write a Review',
-      }
-    }
-
-    if (userComment) {
-      return {
-        showAddTab: true,
-        addTabLabel: 'Edit Your Review',
-      }
-    }
-
-    return {
-      showAddTab: true,
-      addTabLabel: 'Write a Review',
-    }
-  }, [isAuthenticated, userComment])
-
-  // Load comments data
+  // Initialize form with existing review data
   useEffect(() => {
-    const loadCommentsData = async () => {
-      setApiError(null)
-      try {
-        if (isAuthenticated) {
-          console.log('🔐 Loading authenticated comments...')
-          await loadComments(productId)
-        } else {
-          console.log('🔓 Loading public comments...')
-          await loadCommentsPublic(productId)
-        }
-      } catch (err) {
-        console.error('Failed to load comments:', err)
-        setApiError(err instanceof Error ? err.message : 'Failed to load comments')
+    if (existingReview) {
+      console.log('🔄 Initializing form with existing review:', existingReview)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setRating(parseFloat(existingReview.score))
+      setComment(existingReview.comment || '')
+      setIsEditing(true)
+    } else {
+      // Reset form if no existing review
+      console.log('🔄 No existing review, resetting form')
+      setRating(0)
+      setComment('')
+      setIsEditing(false)
+    }
+  }, [existingReview])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setFormError(null)
+    
+    if (rating === 0) {
+      setFormError('Please select a rating')
+      return
+    }
+
+    try {
+      if (existingReview) {
+        // Always update existing review
+        console.log('📝 Updating existing review:', existingReview.rating_id)
+        await updateComment(existingReview.rating_id, comment.trim(), rating)
+        console.log('✅ Review updated successfully')
+      } else {
+        // Add new review (only if no existing review)
+        console.log('📝 Adding new review for product:', productId)
+        await addComment(productId, comment.trim(), rating)
+        console.log('✅ Review added successfully')
+      }
+      
+      setIsSubmitted(true)
+      
+      // Callback to parent
+      setTimeout(() => {
+        onCommentAdded()
+        setIsSubmitted(false)
+      }, 2000)
+    } catch (error: any) {
+      console.error('Failed to submit review:', error)
+      
+      // Handle specific error messages from API
+      if (error.message?.includes('already exists')) {
+        setFormError('You have already reviewed this product. Please edit your existing review instead.')
+      } else if (error.message) {
+        setFormError(error.message)
+      } else {
+        setFormError('Failed to submit review. Please try again.')
       }
     }
-
-    loadCommentsData()
-  }, [productId, isAuthenticated, loadComments, loadCommentsPublic])
-
-  // Handle user navigation to add tab when they already have a comment
-  const handleAddTabClick = () => {
-    if (userComment) {
-      // If user has a comment and clicks "Edit Your Review", ensure we're on add tab
-      setActiveTab('add')
-    } else {
-      setActiveTab('add')
-    }
   }
 
-  // Handle comment added callback
-  const handleCommentAdded = () => {
-    // Reload comments and switch to comments tab
-    loadComments(productId)
-    setActiveTab('comments')
-  }
-
-  // Calculate average rating
-  const averageRating = commentsArray.length > 0 
-    ? commentsArray.reduce((sum, comment) => sum + parseFloat(comment.score), 0) / commentsArray.length
-    : 0
-
-  // Rating distribution
-  const ratingDistribution = [5, 4, 3, 2, 1].map(stars => ({
-    stars,
-    count: commentsArray.filter(comment => Math.round(parseFloat(comment.score)) === stars).length,
-    percentage: commentsArray.length > 0 
-      ? (commentsArray.filter(comment => Math.round(parseFloat(comment.score)) === stars).length / commentsArray.length) * 100
-      : 0
-  }))
-
-  return (
-    <div className="bg-white rounded-lg shadow-sm">
-      {/* Header */}
-      <div className="border-b border-gray-200 p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <MessageSquare size={24} className="text-gray-600" />
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Customer Reviews</h2>
-              <div className="flex items-center space-x-2 mt-1">
-                <div className="flex items-center">
-                  <Star size={20} className="text-yellow-400 fill-current" />
-                  <span className="ml-1 text-lg font-semibold text-gray-900">
-                    {averageRating.toFixed(1)}
-                  </span>
-                </div>
-                <span className="text-gray-500">•</span>
-                <span className="text-gray-600">{commentsArray.length} reviews</span>
-                {userComment && (
-                  <>
-                    <span className="text-gray-500">•</span>
-                    <span className="text-blue-600 text-sm font-medium">You&apos;ve reviewed this product</span>
-                  </>
-                )}
+  // If user has already reviewed, show their current review with edit option
+  if (existingReview && !isEditing) {
+    return (
+      <div className="max-w-2xl">
+        <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <CheckCircle size={24} className="text-green-500" />
+              <div>
+                <h3 className="text-lg font-semibold text-green-900">You&apos;ve Already Reviewed This Product</h3>
+                <p className="text-green-700 text-sm">You can edit your existing review below</p>
               </div>
+            </div>
+            <button
+              onClick={() => setIsEditing(true)}
+              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+            >
+              <Edit size={16} />
+              <span>Edit Review</span>
+            </button>
+          </div>
+
+          {/* Show current review */}
+          <div className="bg-white rounded-md p-4 border border-green-100">
+            <div className="flex items-center space-x-2 mb-3">
+              <div className="flex">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    size={18}
+                    className={`${
+                      star <= Math.round(parseFloat(existingReview.score))
+                        ? 'text-yellow-400 fill-current'
+                        : 'text-gray-300'
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="text-sm text-gray-600 font-medium">
+                ({parseFloat(existingReview.score).toFixed(1)})
+              </span>
+            </div>
+            {existingReview.comment && (
+              <p className="text-gray-700 text-sm leading-relaxed">{existingReview.comment}</p>
+            )}
+            <div className="mt-3 pt-3 border-t border-gray-100">
+              <p className="text-xs text-gray-500">
+                You can update your rating and review at any time
+              </p>
             </div>
           </div>
         </div>
       </div>
+    )
+  }
 
-      {/* API Error Banner */}
-      {apiError && (
-        <div className="bg-yellow-50 border-b border-yellow-200 p-4">
-          <div className="flex items-center">
-            <AlertCircle size={20} className="text-yellow-400 mr-3" />
-            <div className="flex-1">
-              <p className="text-sm text-yellow-800">
-                <strong>Note:</strong> {apiError}. Showing public reviews.
-              </p>
+  if (isSubmitted) {
+    return (
+      <div className="text-center py-8">
+        <div className="text-green-500 mb-4">
+          <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">
+          {existingReview ? 'Review Updated!' : 'Review Submitted!'}
+        </h3>
+        <p className="text-gray-500">
+          {existingReview 
+            ? 'Your review has been updated successfully.' 
+            : 'Thank you for sharing your experience with this product.'
+          }
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="max-w-2xl">
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold text-gray-900">
+          {existingReview ? 'Edit Your Review' : 'Write a Review'}
+        </h3>
+        <p className="text-gray-600">
+          {existingReview 
+            ? 'Update your thoughts about this product' 
+            : `Share your thoughts about "${productName}"`
+          }
+        </p>
+      </div>
+
+      {/* Show API errors */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+          <div className="flex items-start space-x-3">
+            <AlertCircle size={20} className="text-red-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-red-800 text-sm font-medium">Unable to submit review</p>
+              <p className="text-red-700 text-sm mt-1">{error}</p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Content */}
-      <div className="p-6">
-        {/* Rating Summary */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-          {/* Average Rating */}
-          <div className="text-center lg:text-left">
-            <div className="text-4xl font-bold text-gray-900 mb-2">
-              {averageRating.toFixed(1)}
+      {/* Show form-specific errors */}
+      {formError && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-6">
+          <div className="flex items-start space-x-3">
+            <AlertCircle size={20} className="text-yellow-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-yellow-800 text-sm font-medium">Notice</p>
+              <p className="text-yellow-700 text-sm mt-1">{formError}</p>
             </div>
-            <div className="flex justify-center lg:justify-start">
-              {[1, 2, 3, 4, 5].map((star) => (
+          </div>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Rating Selection */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Your Rating *
+          </label>
+          <div className="flex items-center space-x-1">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                type="button"
+                onClick={() => setRating(star)}
+                onMouseEnter={() => setHoverRating(star)}
+                onMouseLeave={() => setHoverRating(0)}
+                className="p-1 transition-transform hover:scale-110"
+              >
                 <Star
-                  key={star}
-                  size={20}
+                  size={32}
                   className={`${
-                    star <= Math.round(averageRating)
+                    star <= (hoverRating || rating)
                       ? 'text-yellow-400 fill-current'
                       : 'text-gray-300'
                   }`}
                 />
-              ))}
-            </div>
-            <p className="text-gray-600 mt-1">Based on {commentsArray.length} reviews</p>
-          </div>
-
-          {/* Rating Distribution */}
-          <div className="lg:col-span-2">
-            <h4 className="text-sm font-medium text-gray-900 mb-3">Rating Breakdown</h4>
-            <div className="space-y-2">
-              {ratingDistribution.map(({ stars, count, percentage }) => (
-                <div key={stars} className="flex items-center space-x-3">
-                  <span className="text-sm text-gray-600 w-4">{stars}</span>
-                  <Star size={16} className="text-yellow-400 fill-current" />
-                  <div className="flex-1 bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-yellow-400 h-2 rounded-full" 
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-                  <span className="text-sm text-gray-600 w-12 text-right">
-                    {count}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="border-b border-gray-200 mb-6">
-          <nav className="flex -mb-px">
-            <button
-              onClick={() => setActiveTab('comments')}
-              className={`py-2 px-4 border-b-2 font-medium text-sm ${
-                activeTab === 'comments'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              All Reviews ({commentsArray.length})
-            </button>
-            {tabConfig.showAddTab && (
-              <button
-                onClick={handleAddTabClick}
-                className={`py-2 px-4 border-b-2 font-medium text-sm ${
-                  activeTab === 'add'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                {tabConfig.addTabLabel}
               </button>
-            )}
-          </nav>
+            ))}
+            <span className="ml-2 text-sm text-gray-600">
+              {rating > 0 ? `${rating}.0 stars` : 'Select rating'}
+            </span>
+          </div>
         </div>
 
-        {/* Tab Content */}
-        {activeTab === 'comments' ? (
-          <CommentList
-            comments={commentsArray}
-            isLoading={isLoading}
-            error={error}
-            hasMore={hasMore}
-            onLoadMore={() => loadMoreComments(productId)}
-            onDeleteComment={(ratingId) => deleteComment(ratingId)}
-            onUpdateComment={(ratingId, comment, score) => updateComment(ratingId, comment, score)}
+        {/* Comment Textarea */}
+        <div>
+          <label htmlFor="comment" className="block text-sm font-medium text-gray-700 mb-2">
+            Your Review {!existingReview && '(Optional)'}
+          </label>
+          <textarea
+            id="comment"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            rows={6}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            placeholder={
+              existingReview 
+                ? "Update your experience with this product..." 
+                : "Share your experience with this product. What did you like or dislike? How does it compare to similar products?"
+            }
+            maxLength={1000}
           />
-        ) : (
-          <AddCommentForm
-            productId={parseInt(productId)}
-            productName={productName}
-            onCommentAdded={handleCommentAdded}
-          />
-        )}
+          <div className="flex justify-between mt-1">
+            <span className="text-xs text-gray-500">
+              {comment.length}/1000 characters
+            </span>
+            <span className="text-xs text-gray-500">
+              * Required fields
+            </span>
+          </div>
+        </div>
+
+        {/* Submit Buttons */}
+        <div className="flex justify-end space-x-3">
+          {existingReview && (
+            <button
+              type="button"
+              onClick={() => setIsEditing(false)}
+              disabled={isLoading}
+              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          )}
+          <button
+            type="submit"
+            disabled={isLoading || rating === 0}
+            className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+          >
+            <Send size={16} />
+            <span>
+              {isLoading 
+                ? 'Submitting...' 
+                : existingReview 
+                  ? 'Update Review' 
+                  : 'Submit Review'
+              }
+            </span>
+          </button>
+        </div>
+      </form>
+
+      {/* Tips */}
+      <div className="mt-8 p-4 bg-blue-50 rounded-md">
+        <h4 className="text-sm font-medium text-blue-900 mb-2">
+          {existingReview ? 'Updating your review' : 'Writing a helpful review'}
+        </h4>
+        <ul className="text-xs text-blue-700 space-y-1">
+          <li>• Describe your experience using the product</li>
+          <li>• Mention specific features you liked or disliked</li>
+          <li>• Compare it to similar products if you can</li>
+          <li>• Be honest and detailed in your feedback</li>
+          {existingReview && (
+            <li>• You can update your review as many times as needed</li>
+          )}
+        </ul>
       </div>
     </div>
   )
