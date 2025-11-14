@@ -127,10 +127,10 @@ export default function ProductPage() {
         )}
         {/* Add Comments Section */}
 <div className="mt-8">
-  <CommentsSection 
-    productId={productId} 
-    productName={product.name} 
-  />
+ <CommentsSection 
+  productId={productId} 
+  productName={product.name} 
+/>
 </div>
       </div>
     </div>

@@ -12,6 +12,7 @@ interface CommentListProps {
   hasMore: boolean
   onLoadMore: () => void
   onDeleteComment: (ratingId: number) => void
+  onUpdateComment?: (ratingId: number, comment: string, score: number) => void
 }
 
 export default function CommentList({ 
@@ -20,7 +21,8 @@ export default function CommentList({
   error, 
   hasMore, 
   onLoadMore, 
-  onDeleteComment 
+  onDeleteComment,
+  onUpdateComment 
 }: CommentListProps) {
   // Ensure comments is always an array
   const commentsArray = Array.isArray(comments) ? comments : []
@@ -63,6 +65,7 @@ export default function CommentList({
           key={comment.rating_id}
           comment={comment}
           onDelete={onDeleteComment}
+          onUpdate={onUpdateComment}
         />
       ))}
 

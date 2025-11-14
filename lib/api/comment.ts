@@ -1,20 +1,55 @@
 // lib/api/comments.ts
-import { CommentsResponse, AuthenticatedCommentsResponse, AddCommentData, AddCommentResponse } from '@/types/comment'
+import {
+    PublicCommentsResponse,
+    AuthenticatedCommentsResponse,
+    AddCommentData,
+    UpdateCommentData,
+    AddCommentResponse,
+    UpdateCommentResponse,
+    DeleteCommentResponse
+} from '@/types/comment'
 
 const API_BASE_URL = 'https://aa-dev.site/you/api'
 
-// Public API - No authentication required
-// lib/api/comments.ts - Add debugging to both functions
+async function commentsFetch(endpoint: string, options: RequestInit = {}) {
+    const token = localStorage.getItem('token')
 
-// Public API - No authentication required
-// lib/api/comments.ts
+    if (!token) {
+        throw new Error('No authentication token found')
+    }
+
+    try {
+        const url = `${API_BASE_URL}${endpoint}`
+        const response = await fetch(url, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                ...options.headers,
+            },
+            ...options,
+        })
+
+        const data = await response.json()
+        console.log(`🔑 Comments API Response from ${endpoint}:`, data)
+
+        if (!response.ok) {
+            throw new Error(data.message || `HTTP error! status: ${response.status}`)
+        }
+
+        return data
+    } catch (error) {
+        console.error(`Comments API error at ${endpoint}:`, error)
+        throw error
+    }
+}
 
 // Public API - No authentication required
 export async function getProductCommentsPublic(
     productId: string,
     limit?: number,
     offset?: number
-): Promise<CommentsResponse> {
+): Promise<PublicCommentsResponse> {
     try {
         let url = `${API_BASE_URL}/public/products/${productId}/comments`
 
@@ -51,141 +86,55 @@ export async function getProductCommentsPublic(
     }
 }
 
-// Authenticated API - Requires bearer token
+// Get product comments (authenticated)
 export async function getProductComments(
     productId: string,
     limit?: number,
     offset?: number
 ): Promise<AuthenticatedCommentsResponse> {
-    const token = localStorage.getItem('token')
+    let url = `${API_BASE_URL}/products/${productId}/comments`
 
-    if (!token) {
-        throw new Error('No authentication token found')
+    const params = new URLSearchParams()
+    if (limit) params.append('limit', limit.toString())
+    if (offset) params.append('offset', offset.toString())
+
+    const queryString = params.toString()
+    if (queryString) {
+        url += `?${queryString}`
     }
 
-    try {
-        let url = `${API_BASE_URL}/products/${productId}/comments`
-
-        const params = new URLSearchParams()
-        if (limit) params.append('limit', limit.toString())
-        if (offset) params.append('offset', offset.toString())
-
-        const queryString = params.toString()
-        if (queryString) {
-            url += `?${queryString}`
-        }
-
-        console.log(`📤 Fetching authenticated comments from: ${url}`)
-
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-        })
-
-        const data = await response.json()
-        console.log(`📥 Authenticated comments API response:`, data)
-
-        if (!response.ok) {
-            throw new Error(data.message || `HTTP error! status: ${response.status}`)
-        }
-
-        // Handle different response structures
-        // If data.data exists and has comments array, use that structure
-        // Otherwise, assume data.data is the comments array directly
-        if (data.data && Array.isArray(data.data.comments)) {
-            // Public API structure: { data: { comments: [], next_offset, has_more } }
-            return {
-                message: data.message,
-                data: data.data.comments
-            }
-        } else if (Array.isArray(data.data)) {
-            // Authenticated API structure: { data: [] }
-            return data
-        } else {
-            // Fallback: try to extract comments from different paths
-            console.warn('Unexpected API response structure:', data)
-            return {
-                message: data.message,
-                data: Array.isArray(data.data) ? data.data : []
-            }
-        }
-    } catch (error) {
-        console.error(`Authenticated comments API error:`, error)
-        throw error
-    }
+    return commentsFetch(url, {
+        method: 'GET',
+    })
 }
 
-// Add new comment
-export async function addProductComment(commentData: AddCommentData): Promise<AddCommentResponse> {
-    const token = localStorage.getItem('token')
-
-    if (!token) {
-        throw new Error('No authentication token found')
-    }
-
-    try {
-        const url = `${API_BASE_URL}/products/${commentData.product_id}/comments`
-        console.log(`📤 Adding comment to: ${url}`, commentData)
-
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify(commentData),
-        })
-
-        const data = await response.json()
-        console.log(`📥 Add comment API response:`, data)
-
-        if (!response.ok) {
-            throw new Error(data.message || `HTTP error! status: ${response.status}`)
-        }
-
-        return data
-    } catch (error) {
-        console.error(`Add comment API error:`, error)
-        throw error
-    }
+// Add new rating/comment
+export async function addProductComment(
+    productId: string,
+    commentData: AddCommentData
+): Promise<AddCommentResponse> {
+    return commentsFetch(`/ratings/add/product/${productId}`, {
+        method: 'POST',
+        body: JSON.stringify(commentData),
+    })
 }
 
-// Delete comment
-export async function deleteProductComment(productId: string, ratingId: number): Promise<{ message: string }> {
-    const token = localStorage.getItem('token')
+// Update rating/comment
+export async function updateProductComment(
+    ratingId: number,
+    commentData: UpdateCommentData
+): Promise<UpdateCommentResponse> {
+    return commentsFetch(`/ratings/update/${ratingId}`, {
+        method: 'PUT',
+        body: JSON.stringify(commentData),
+    })
+}
 
-    if (!token) {
-        throw new Error('No authentication token found')
-    }
-
-    try {
-        const url = `${API_BASE_URL}/products/${productId}/comments/${ratingId}`
-        console.log(`📤 Deleting comment from: ${url}`)
-
-        const response = await fetch(url, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-        })
-
-        const data = await response.json()
-        console.log(`📥 Delete comment API response:`, data)
-
-        if (!response.ok) {
-            throw new Error(data.message || `HTTP error! status: ${response.status}`)
-        }
-
-        return data
-    } catch (error) {
-        console.error(`Delete comment API error:`, error)
-        throw error
-    }
+// Delete rating/comment
+export async function deleteProductComment(
+    ratingId: number
+): Promise<DeleteCommentResponse> {
+    return commentsFetch(`/ratings/delete/${ratingId}`, {
+        method: 'DELETE',
+    })
 }

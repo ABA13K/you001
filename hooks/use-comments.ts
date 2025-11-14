@@ -4,6 +4,7 @@ import {
     getProductCommentsPublic,
     getProductComments,
     addProductComment,
+    updateProductComment,
     deleteProductComment
 } from '@/lib/api/comment'
 import { Comment } from '@/types/comment'
@@ -80,16 +81,20 @@ export function useComments() {
         }
     }, [])
 
-    // Add new comment
+    // Add new comment/rating
     const addComment = useCallback(async (productId: number, comment: string, score: number) => {
         setIsLoading(true)
         setError(null)
         try {
-            const response = await addProductComment({
-                product_id: productId,
-                comment,
-                score
-            })
+            const commentData = {
+                score: score,
+                ...(comment.trim() && { comment: comment.trim() }) // Only include comment if not empty
+            }
+
+            console.log('📤 Adding comment:', { productId, commentData })
+
+            const response = await addProductComment(productId.toString(), commentData)
+            console.log('✅ Comment added successfully:', response)
 
             // Reload comments to get the updated list
             await loadComments(productId.toString())
@@ -104,12 +109,47 @@ export function useComments() {
         }
     }, [loadComments])
 
-    // Delete comment
-    const deleteComment = useCallback(async (productId: string, ratingId: number) => {
+    // Update existing comment/rating
+    const updateComment = useCallback(async (ratingId: number, comment: string, score: number) => {
         setIsLoading(true)
         setError(null)
         try {
-            const response = await deleteProductComment(productId, ratingId)
+            const commentData = {
+                score: score,
+                ...(comment.trim() && { comment: comment.trim() }) // Only include comment if not empty
+            }
+
+            console.log('📤 Updating comment:', { ratingId, commentData })
+
+            const response = await updateProductComment(ratingId, commentData)
+            console.log('✅ Comment updated successfully:', response)
+
+            // Update local state immediately
+            setComments(prev => prev.map(comment =>
+                comment.rating_id === ratingId
+                    ? { ...comment, comment: commentData.comment || comment.comment, score: score.toString() }
+                    : comment
+            ))
+
+            return response
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Failed to update comment'
+            setError(message)
+            throw err
+        } finally {
+            setIsLoading(false)
+        }
+    }, [])
+
+    // Delete comment/rating
+    const deleteComment = useCallback(async (ratingId: number) => {
+        setIsLoading(true)
+        setError(null)
+        try {
+            console.log('📤 Deleting comment:', ratingId)
+
+            const response = await deleteProductComment(ratingId)
+            console.log('✅ Comment deleted successfully:', response)
 
             // Remove comment from local state immediately
             setComments(prev => safeArray(prev).filter(comment => comment.rating_id !== ratingId))
@@ -148,6 +188,7 @@ export function useComments() {
         loadCommentsPublic,
         loadComments,
         addComment,
+        updateComment,
         deleteComment,
         loadMoreComments,
         clearError,

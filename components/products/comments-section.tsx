@@ -14,7 +14,7 @@ interface CommentsSectionProps {
 }
 
 export default function CommentsSection({ productId, productName }: CommentsSectionProps) {
-  const { comments, isLoading, error, hasMore, loadMoreComments, loadCommentsPublic, loadComments } = useComments()
+  const { comments, isLoading, error, hasMore, loadMoreComments, loadCommentsPublic, loadComments, addComment, updateComment, deleteComment } = useComments()
   const { isAuthenticated } = useAuthOperations()
   const [activeTab, setActiveTab] = useState<'comments' | 'add'>('comments')
 
@@ -47,10 +47,6 @@ export default function CommentsSection({ productId, productName }: CommentsSect
       ? (commentsArray.filter(comment => Math.round(parseFloat(comment.score)) === stars).length / commentsArray.length) * 100
       : 0
   }))
-
-    function deleteComment(productId: string, ratingId: number): void {
-        throw new Error('Function not implemented.')
-    }
 
   return (
     <div className="bg-white rounded-lg shadow-sm">
@@ -160,7 +156,8 @@ export default function CommentsSection({ productId, productName }: CommentsSect
             error={error}
             hasMore={hasMore}
             onLoadMore={() => loadMoreComments(productId)}
-            onDeleteComment={(ratingId) => deleteComment(productId, ratingId)}
+            onDeleteComment={(ratingId) => deleteComment(ratingId)}
+            onUpdateComment={(ratingId, comment, score) => updateComment(ratingId, comment, score)}
           />
         ) : (
           <AddCommentForm

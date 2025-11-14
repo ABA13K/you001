@@ -26,11 +26,6 @@ export default function AddCommentForm({ productId, productName, onCommentAdded 
       return
     }
 
-    if (comment.trim().length === 0) {
-      alert('Please write a comment')
-      return
-    }
-
     try {
       await addComment(productId, comment.trim(), rating)
       setIsSubmitted(true)
@@ -106,7 +101,7 @@ export default function AddCommentForm({ productId, productName, onCommentAdded 
         {/* Comment Textarea */}
         <div>
           <label htmlFor="comment" className="block text-sm font-medium text-gray-700 mb-2">
-            Your Review *
+            Your Review (Optional)
           </label>
           <textarea
             id="comment"
@@ -131,7 +126,7 @@ export default function AddCommentForm({ productId, productName, onCommentAdded 
         <div className="flex justify-end">
           <button
             type="submit"
-            disabled={isLoading || rating === 0 || comment.trim().length === 0}
+            disabled={isLoading || rating === 0}
             className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
           >
             <Send size={16} />
