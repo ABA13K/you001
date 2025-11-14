@@ -1,4 +1,4 @@
-// components/products/comments-section.tsx
+// components/products/comments-section.tsx - Updated version
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -6,7 +6,7 @@ import { useComments } from '@/hooks/use-comments'
 import { useAuthOperations } from '@/hooks/use-auth-operations'
 import CommentList from './comment-list'
 import AddCommentForm from './add-comment-form'
-import { MessageSquare, Star } from 'lucide-react'
+import { MessageSquare, Star, AlertCircle } from 'lucide-react'
 
 interface CommentsSectionProps {
   productId: string
@@ -17,6 +17,7 @@ export default function CommentsSection({ productId, productName }: CommentsSect
   const { comments, isLoading, error, hasMore, loadMoreComments, loadCommentsPublic, loadComments, addComment, updateComment, deleteComment } = useComments()
   const { isAuthenticated } = useAuthOperations()
   const [activeTab, setActiveTab] = useState<'comments' | 'add'>('comments')
+  const [apiError, setApiError] = useState<string | null>(null)
 
   // Safe array utility
   const safeArray = <T,>(value: T[] | null | undefined): T[] => {
@@ -26,12 +27,23 @@ export default function CommentsSection({ productId, productName }: CommentsSect
   const commentsArray = safeArray(comments)
 
   useEffect(() => {
-    // Load comments on component mount
-    if (isAuthenticated) {
-      loadComments(productId)
-    } else {
-      loadCommentsPublic(productId)
+    const loadCommentsData = async () => {
+      setApiError(null)
+      try {
+        if (isAuthenticated) {
+          console.log('🔐 Loading authenticated comments...')
+          await loadComments(productId)
+        } else {
+          console.log('🔓 Loading public comments...')
+          await loadCommentsPublic(productId)
+        }
+      } catch (err) {
+        console.error('Failed to load comments:', err)
+        setApiError(err instanceof Error ? err.message : 'Failed to load comments')
+      }
     }
+
+    loadCommentsData()
   }, [productId, isAuthenticated, loadComments, loadCommentsPublic])
 
   // Calculate average rating
@@ -71,6 +83,20 @@ export default function CommentsSection({ productId, productName }: CommentsSect
           </div>
         </div>
       </div>
+
+      {/* API Error Banner */}
+      {apiError && (
+        <div className="bg-yellow-50 border-b border-yellow-200 p-4">
+          <div className="flex items-center">
+            <AlertCircle size={20} className="text-yellow-400 mr-3" />
+            <div className="flex-1">
+              <p className="text-sm text-yellow-800">
+                <strong>Note:</strong> {apiError}. Showing public reviews.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       <div className="p-6">
@@ -166,7 +192,11 @@ export default function CommentsSection({ productId, productName }: CommentsSect
             onCommentAdded={() => {
               setActiveTab('comments')
               // Reload comments to show the new one
-              loadComments(productId)
+              loadComments(productId).catch(err => {
+                console.error('Failed to reload comments:', err)
+                // Fallback to public API if authenticated fails
+                loadCommentsPublic(productId)
+              })
             }}
           />
         )}

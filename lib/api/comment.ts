@@ -1,4 +1,4 @@
-// lib/api/comments.ts
+// lib/api/comments.ts - Updated with better error handling
 import {
     PublicCommentsResponse,
     AuthenticatedCommentsResponse,
@@ -20,6 +20,8 @@ async function commentsFetch(endpoint: string, options: RequestInit = {}) {
 
     try {
         const url = `${API_BASE_URL}${endpoint}`
+        console.log(`📤 Making request to: ${url}`)
+
         const response = await fetch(url, {
             headers: {
                 'Content-Type': 'application/json',
@@ -30,13 +32,27 @@ async function commentsFetch(endpoint: string, options: RequestInit = {}) {
             ...options,
         })
 
-        const data = await response.json()
-        console.log(`🔑 Comments API Response from ${endpoint}:`, data)
-
+        // First, check if we got a successful response
         if (!response.ok) {
-            throw new Error(data.message || `HTTP error! status: ${response.status}`)
+            const errorText = await response.text()
+            console.error(`❌ HTTP Error ${response.status}:`, errorText)
+            throw new Error(`HTTP error! status: ${response.status}`)
         }
 
+        // Try to parse as JSON
+        let data
+        const responseText = await response.text()
+        console.log(`📥 Raw response:`, responseText)
+
+        try {
+            data = JSON.parse(responseText)
+        } catch (parseError) {
+            console.error('❌ JSON Parse Error:', parseError)
+            console.error('📄 Response content:', responseText)
+            throw new Error('Invalid JSON response from server')
+        }
+
+        console.log(`🔑 Comments API Response from ${endpoint}:`, data)
         return data
     } catch (error) {
         console.error(`Comments API error at ${endpoint}:`, error)
@@ -72,13 +88,26 @@ export async function getProductCommentsPublic(
             },
         })
 
-        const data = await response.json()
-        console.log(`📥 Public comments API response:`, data)
-
+        // Check response status first
         if (!response.ok) {
-            throw new Error(data.message || `HTTP error! status: ${response.status}`)
+            const errorText = await response.text()
+            console.error(`❌ Public API HTTP Error ${response.status}:`, errorText)
+            throw new Error(`HTTP error! status: ${response.status}`)
         }
 
+        // Try to parse JSON
+        const responseText = await response.text()
+        console.log(`📥 Public API raw response:`, responseText)
+
+        let data
+        try {
+            data = JSON.parse(responseText)
+        } catch (parseError) {
+            console.error('❌ Public API JSON Parse Error:', parseError)
+            throw new Error('Invalid JSON response from public comments API')
+        }
+
+        console.log(`📥 Public comments API response:`, data)
         return data
     } catch (error) {
         console.error(`Public comments API error:`, error)

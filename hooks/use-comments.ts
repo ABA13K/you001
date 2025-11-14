@@ -1,4 +1,4 @@
-// hooks/use-comments.ts
+// hooks/use-comments.ts - Add fallback to public API
 import { useState, useCallback } from 'react'
 import {
     getProductCommentsPublic,
@@ -29,7 +29,6 @@ export function useComments() {
             const response = await getProductCommentsPublic(productId, limit, offset)
             console.log('📥 Public comments response:', response)
 
-            // Public API: comments are in response.data.comments
             const commentsData = safeArray(response.data?.comments)
             console.log('📊 Extracted comments:', commentsData)
 
@@ -51,15 +50,15 @@ export function useComments() {
         }
     }, [])
 
-    // Load comments (authenticated)
+    // Load comments (authenticated) with fallback to public API
     const loadComments = useCallback(async (productId: string, limit?: number, offset?: number) => {
         setIsLoading(true)
         setError(null)
         try {
+            console.log('🔐 Attempting to load authenticated comments...')
             const response = await getProductComments(productId, limit, offset)
-            console.log('📥 Authenticated comments response:', response)
+            console.log('✅ Authenticated comments loaded:', response)
 
-            // Authenticated API: comments are directly in response.data
             const commentsData = safeArray(response.data)
             console.log('📊 Extracted comments:', commentsData)
 
@@ -68,19 +67,35 @@ export function useComments() {
             } else {
                 setComments(commentsData)
             }
-            // Authenticated endpoint doesn't return pagination info
             setHasMore(false)
             return commentsData
         } catch (err) {
-            const message = err instanceof Error ? err.message : 'Failed to load comments'
-            setError(message)
-            setComments([])
-            throw err
+            console.error('❌ Authenticated API failed, falling back to public API:', err)
+
+            // Fallback to public API
+            try {
+                console.log('🔄 Falling back to public comments API...')
+                const publicResponse = await getProductCommentsPublic(productId, limit, offset)
+                const commentsData = safeArray(publicResponse.data?.comments)
+
+                setComments(commentsData)
+                setHasMore(publicResponse.data?.has_more || false)
+                setNextOffset(publicResponse.data?.next_offset)
+
+                console.log('✅ Public comments loaded as fallback:', commentsData)
+                return commentsData
+            } catch (fallbackError) {
+                const message = err instanceof Error ? err.message : 'Failed to load comments from both APIs'
+                setError(message)
+                setComments([])
+                throw fallbackError
+            }
         } finally {
             setIsLoading(false)
         }
     }, [])
 
+    // ... rest of the hook remains the same
     // Add new comment/rating
     const addComment = useCallback(async (productId: number, comment: string, score: number) => {
         setIsLoading(true)
@@ -88,7 +103,7 @@ export function useComments() {
         try {
             const commentData = {
                 score: score,
-                ...(comment.trim() && { comment: comment.trim() }) // Only include comment if not empty
+                ...(comment.trim() && { comment: comment.trim() })
             }
 
             console.log('📤 Adding comment:', { productId, commentData })
@@ -116,7 +131,7 @@ export function useComments() {
         try {
             const commentData = {
                 score: score,
-                ...(comment.trim() && { comment: comment.trim() }) // Only include comment if not empty
+                ...(comment.trim() && { comment: comment.trim() })
             }
 
             console.log('📤 Updating comment:', { ratingId, commentData })
