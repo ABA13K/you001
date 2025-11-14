@@ -28,14 +28,13 @@ export function useComments() {
             const response = await getProductCommentsPublic(productId, limit, offset)
             console.log('📥 Public comments response:', response)
 
+            // Public API: comments are in response.data.comments
             const commentsData = safeArray(response.data?.comments)
-            console.log('📊 Comments data:', commentsData)
+            console.log('📊 Extracted comments:', commentsData)
 
             if (offset && offset > 0) {
-                // Append to existing comments for pagination
                 setComments(prev => [...prev, ...commentsData])
             } else {
-                // Replace comments for initial load
                 setComments(commentsData)
             }
             setHasMore(response.data?.has_more || false)
@@ -44,7 +43,7 @@ export function useComments() {
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Failed to load comments'
             setError(message)
-            setComments([]) // Reset to empty array on error
+            setComments([])
             throw err
         } finally {
             setIsLoading(false)
@@ -59,21 +58,22 @@ export function useComments() {
             const response = await getProductComments(productId, limit, offset)
             console.log('📥 Authenticated comments response:', response)
 
+            // Authenticated API: comments are directly in response.data
             const commentsData = safeArray(response.data)
-            console.log('📊 Comments data:', commentsData)
+            console.log('📊 Extracted comments:', commentsData)
 
             if (offset && offset > 0) {
                 setComments(prev => [...prev, ...commentsData])
             } else {
                 setComments(commentsData)
             }
-            // Note: Authenticated endpoint doesn't return pagination info
+            // Authenticated endpoint doesn't return pagination info
             setHasMore(false)
             return commentsData
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Failed to load comments'
             setError(message)
-            setComments([]) // Reset to empty array on error
+            setComments([])
             throw err
         } finally {
             setIsLoading(false)
@@ -140,7 +140,7 @@ export function useComments() {
     }, [])
 
     return {
-        comments: safeArray(comments), // Always return array
+        comments: safeArray(comments),
         isLoading,
         error,
         hasMore,

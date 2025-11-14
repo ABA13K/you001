@@ -7,6 +7,9 @@ const API_BASE_URL = 'https://aa-dev.site/you/api'
 // lib/api/comments.ts - Add debugging to both functions
 
 // Public API - No authentication required
+// lib/api/comments.ts
+
+// Public API - No authentication required
 export async function getProductCommentsPublic(
     productId: string,
     limit?: number,
@@ -15,7 +18,6 @@ export async function getProductCommentsPublic(
     try {
         let url = `${API_BASE_URL}/public/products/${productId}/comments`
 
-        // Add query parameters if provided
         const params = new URLSearchParams()
         if (limit) params.append('limit', limit.toString())
         if (offset) params.append('offset', offset.toString())
@@ -37,8 +39,6 @@ export async function getProductCommentsPublic(
 
         const data = await response.json()
         console.log(`📥 Public comments API response:`, data)
-        console.log(`📊 Comments data type:`, typeof data.data?.comments)
-        console.log(`📊 Is comments array?`, Array.isArray(data.data?.comments))
 
         if (!response.ok) {
             throw new Error(data.message || `HTTP error! status: ${response.status}`)
@@ -66,7 +66,6 @@ export async function getProductComments(
     try {
         let url = `${API_BASE_URL}/products/${productId}/comments`
 
-        // Add query parameters if provided
         const params = new URLSearchParams()
         if (limit) params.append('limit', limit.toString())
         if (offset) params.append('offset', offset.toString())
@@ -89,14 +88,31 @@ export async function getProductComments(
 
         const data = await response.json()
         console.log(`📥 Authenticated comments API response:`, data)
-        console.log(`📊 Comments data type:`, typeof data.data)
-        console.log(`📊 Is comments array?`, Array.isArray(data.data))
 
         if (!response.ok) {
             throw new Error(data.message || `HTTP error! status: ${response.status}`)
         }
 
-        return data
+        // Handle different response structures
+        // If data.data exists and has comments array, use that structure
+        // Otherwise, assume data.data is the comments array directly
+        if (data.data && Array.isArray(data.data.comments)) {
+            // Public API structure: { data: { comments: [], next_offset, has_more } }
+            return {
+                message: data.message,
+                data: data.data.comments
+            }
+        } else if (Array.isArray(data.data)) {
+            // Authenticated API structure: { data: [] }
+            return data
+        } else {
+            // Fallback: try to extract comments from different paths
+            console.warn('Unexpected API response structure:', data)
+            return {
+                message: data.message,
+                data: Array.isArray(data.data) ? data.data : []
+            }
+        }
     } catch (error) {
         console.error(`Authenticated comments API error:`, error)
         throw error
