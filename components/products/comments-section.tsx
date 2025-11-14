@@ -187,18 +187,14 @@ export default function CommentsSection({ productId, productName }: CommentsSect
           />
         ) : (
           <AddCommentForm
-            productId={parseInt(productId)}
-            productName={productName}
-            onCommentAdded={() => {
-              setActiveTab('comments')
-              // Reload comments to show the new one
-              loadComments(productId).catch(err => {
-                console.error('Failed to reload comments:', err)
-                // Fallback to public API if authenticated fails
-                loadCommentsPublic(productId)
-              })
-            }}
-          />
+  productId={parseInt(productId)}
+  productName={productName}
+  onCommentAdded={() => {
+    setActiveTab('comments')
+    // Reload comments to show the new one
+    loadComments(productId)
+  }}
+/>
         )}
       </div>
     </div>

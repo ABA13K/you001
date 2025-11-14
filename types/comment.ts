@@ -1,11 +1,15 @@
 // types/comment.ts
+// types/comment.ts
 export interface Comment {
     rating_id: number
     user_name: string
     comment: string
     score: string
     is_mine: boolean
+    has_comment: boolean // Add this field
 }
+
+// ... rest of your types remain the same
 
 // For public API: /public/products/{id}/comments
 export interface PublicCommentsResponse {
