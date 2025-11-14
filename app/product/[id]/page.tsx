@@ -129,9 +129,10 @@ export default function ProductPage() {
         {/* Comments Section */}
         <div className="mt-8">
           <CommentsSection 
-            productId={productId} 
-            productName={product.name} 
-          />
+            productId={parseInt(productId)}
+            productName={product.name} onCommentAdded={function (): void {
+              throw new Error('Function not implemented.')
+            } }          />
         </div>
       </div>
     </div>

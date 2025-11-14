@@ -1,13 +1,14 @@
 /* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // components/products/add-comment-form.tsx
 'use client'
 
 import { useState, useEffect } from 'react'
 import { useComments } from '@/hooks/use-comments'
-import { Star, Send, Edit, CheckCircle } from 'lucide-react'
+import { Star, Send, Edit, CheckCircle, AlertCircle } from 'lucide-react'
 
 interface AddCommentFormProps {
-  productId: number
+  productId: string // Change from number to string
   productName: string
   onCommentAdded: () => void
 }
@@ -18,9 +19,20 @@ export default function AddCommentForm({ productId, productName, onCommentAdded 
   const [hoverRating, setHoverRating] = useState(0)
   const [comment, setComment] = useState('')
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
   
-  // Find user's existing review
-  const existingReview = comments.find(comment => comment.is_mine)
+  // Enhanced user comment detection
+  const existingReview = comments.find(comment => {
+    console.log('🔍 AddCommentForm - Checking comment:', {
+      rating_id: comment.rating_id,
+      user_name: comment.user_name,
+      is_mine: comment.is_mine,
+      has_comment: comment.has_comment
+    })
+    return comment.is_mine === true
+  })
+
+  console.log('👤 AddCommentForm - Existing review:', existingReview)
 
   // If user already has a review, always show edit mode
   const [isEditing, setIsEditing] = useState(!!existingReview)
@@ -28,11 +40,13 @@ export default function AddCommentForm({ productId, productName, onCommentAdded 
   // Initialize form with existing review data
   useEffect(() => {
     if (existingReview) {
+      console.log('🔄 Initializing form with existing review:', existingReview)
       setRating(parseFloat(existingReview.score))
-      setComment(existingReview.comment)
+      setComment(existingReview.comment || '')
       setIsEditing(true)
     } else {
       // Reset form if no existing review
+      console.log('🔄 No existing review, resetting form')
       setRating(0)
       setComment('')
       setIsEditing(false)
@@ -41,20 +55,23 @@ export default function AddCommentForm({ productId, productName, onCommentAdded 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setFormError(null)
     
     if (rating === 0) {
-      alert('Please select a rating')
+      setFormError('Please select a rating')
       return
     }
 
     try {
       if (existingReview) {
         // Always update existing review
+        console.log('📝 Updating existing review:', existingReview.rating_id)
         await updateComment(existingReview.rating_id, comment.trim(), rating)
         console.log('✅ Review updated successfully')
       } else {
         // Add new review (only if no existing review)
-        await addComment(productId, comment.trim(), rating)
+        console.log('📝 Adding new review for product:', productId)
+        await addComment(parseInt(productId), comment.trim(), rating) // Parse to number here
         console.log('✅ Review added successfully')
       }
       
@@ -65,11 +82,21 @@ export default function AddCommentForm({ productId, productName, onCommentAdded 
         onCommentAdded()
         setIsSubmitted(false)
       }, 2000)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to submit review:', error)
+      
+      // Handle specific error messages from API
+      if (error.message?.includes('already exists')) {
+        setFormError('You have already reviewed this product. Please edit your existing review instead.')
+      } else if (error.message) {
+        setFormError(error.message)
+      } else {
+        setFormError('Failed to submit review. Please try again.')
+      }
     }
   }
 
+  // ... rest of the component remains the same
   // If user has already reviewed, show their current review with edit option
   if (existingReview && !isEditing) {
     return (
@@ -161,9 +188,29 @@ export default function AddCommentForm({ productId, productName, onCommentAdded 
         </p>
       </div>
 
+      {/* Show API errors */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
-          <p className="text-red-800 text-sm">{error}</p>
+          <div className="flex items-start space-x-3">
+            <AlertCircle size={20} className="text-red-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-red-800 text-sm font-medium">Unable to submit review</p>
+              <p className="text-red-700 text-sm mt-1">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Show form-specific errors */}
+      {formError && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-6">
+          <div className="flex items-start space-x-3">
+            <AlertCircle size={20} className="text-yellow-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-yellow-800 text-sm font-medium">Notice</p>
+              <p className="text-yellow-700 text-sm mt-1">{formError}</p>
+            </div>
+          </div>
         </div>
       )}
 
