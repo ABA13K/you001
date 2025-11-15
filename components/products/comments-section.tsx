@@ -17,6 +17,8 @@ export default function CommentsSection({ productId, productName }: CommentsSect
   const { comments, isRated, isLoading, error, hasMore, loadMoreComments, loadCommentsPublic, loadComments, addComment, updateComment, deleteComment } = useComments()
   const { isAuthenticated } = useAuthOperations()
   const [apiError, setApiError] = useState<string | null>(null)
+  
+  // Always start with comments tab, never with add tab
   const [activeTab, setActiveTab] = useState<'comments' | 'add'>('comments')
 
   // Safe array utility
@@ -30,25 +32,28 @@ export default function CommentsSection({ productId, productName }: CommentsSect
   console.log('📝 All comments:', commentsArray)
   console.log('🔐 Is authenticated:', isAuthenticated)
 
-  // Memoized tab configuration - now using isRated instead of finding user comment
+  // Memoized tab configuration - if user has rated, they can only edit, not write new
   const tabConfig = useMemo(() => {
     if (!isAuthenticated) {
       return {
         showAddTab: false,
         addTabLabel: 'Write a Review',
+        canAddNewReview: false
       }
     }
 
     if (isRated) {
       return {
-        showAddTab: true,
+        showAddTab: true, // Show edit tab
         addTabLabel: 'Edit Your Review',
+        canAddNewReview: false // Cannot add new review, only edit
       }
     }
 
     return {
       showAddTab: true,
       addTabLabel: 'Write a Review',
+      canAddNewReview: true // Can add new review
     }
   }, [isAuthenticated, isRated])
 
@@ -73,7 +78,7 @@ export default function CommentsSection({ productId, productName }: CommentsSect
     loadCommentsData()
   }, [productId, isAuthenticated, loadComments, loadCommentsPublic])
 
-  // Auto-switch to comments tab if user has already rated
+  // Auto-switch to comments tab if user has already rated and somehow ended up on add tab
   useEffect(() => {
     if (isRated && activeTab === 'add') {
       console.log('🔄 Auto-switching to comments tab because user has already rated')
@@ -85,9 +90,23 @@ export default function CommentsSection({ productId, productName }: CommentsSect
     }
   }, [isRated, activeTab])
 
-  // Handle comment added callback
+  // Handle tab click - prevent going to add tab if user has already rated
+  const handleTabClick = (tab: 'comments' | 'add') => {
+    if (tab === 'add' && isRated) {
+      // If user has rated and clicks "Edit Your Review", allow it
+      setActiveTab('add')
+    } else if (tab === 'add' && !isRated) {
+      // If user hasn't rated and clicks "Write a Review", allow it
+      setActiveTab('add')
+    } else {
+      // Always allow switching to comments tab
+      setActiveTab(tab)
+    }
+  }
+
+  // Handle comment added/updated callback
   const handleCommentAdded = () => {
-    // Reload comments and switch to comments tab
+    // Reload comments to get the updated list and switch to comments tab
     loadComments(productId)
     setActiveTab('comments')
   }
@@ -202,7 +221,7 @@ export default function CommentsSection({ productId, productName }: CommentsSect
         <div className="border-b border-gray-200 mb-6">
           <nav className="flex -mb-px">
             <button
-              onClick={() => setActiveTab('comments')}
+              onClick={() => handleTabClick('comments')}
               className={`py-2 px-4 border-b-2 font-medium text-sm ${
                 activeTab === 'comments'
                   ? 'border-blue-500 text-blue-600'
@@ -213,7 +232,7 @@ export default function CommentsSection({ productId, productName }: CommentsSect
             </button>
             {tabConfig.showAddTab && (
               <button
-                onClick={() => setActiveTab('add')}
+                onClick={() => handleTabClick('add')}
                 className={`py-2 px-4 border-b-2 font-medium text-sm ${
                   activeTab === 'add'
                     ? 'border-blue-500 text-blue-600'

@@ -1,11 +1,11 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
-// components/products/add-comment-form.tsx
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// components/products/add-comment-form.tsx - Updated to prevent new reviews when already rated
 'use client'
 
 import { useState, useEffect } from 'react'
 import { useComments } from '@/hooks/use-comments'
-import { Star, Send, Edit, CheckCircle, AlertCircle } from 'lucide-react'
+import { Star, Send, Edit, CheckCircle, AlertCircle, Lock } from 'lucide-react'
 
 interface AddCommentFormProps {
   productId: string
@@ -21,9 +21,9 @@ export default function AddCommentForm({ productId, productName, onCommentAdded 
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   
-  // Find user's existing review - now we need to find it since is_mine might not be reliable
-  // We'll assume the first comment is the user's if isRated is true (this might need adjustment based on your API)
-  const existingReview = isRated ? comments[0] : null
+  // Find user's existing review - we'll use the first comment if isRated is true
+  // In a real scenario, you might want a better way to identify the user's specific review
+  const existingReview = isRated ? comments.find(comment => comment.is_mine) || comments[0] : null
 
   console.log('⭐ User has rated:', isRated)
   console.log('👤 Existing review:', existingReview)
@@ -56,13 +56,19 @@ export default function AddCommentForm({ productId, productName, onCommentAdded 
       return
     }
 
+    // Prevent submission if user has already rated and is trying to create a new review
+    if (isRated && !existingReview) {
+      setFormError('You have already reviewed this product. Please edit your existing review.')
+      return
+    }
+
     try {
       if (isRated && existingReview) {
-        // Always update existing review
+        // Update existing review
         console.log('📝 Updating existing review:', existingReview.rating_id)
         await updateComment(existingReview.rating_id, comment.trim(), rating)
         console.log('✅ Review updated successfully')
-      } else {
+      } else if (!isRated) {
         // Add new review (only if no existing review)
         console.log('📝 Adding new review for product:', productId)
         await addComment(productId, comment.trim(), rating)
@@ -88,6 +94,29 @@ export default function AddCommentForm({ productId, productName, onCommentAdded 
         setFormError('Failed to submit review. Please try again.')
       }
     }
+  }
+
+  // If user has already reviewed but we can't find their review, show a message
+  if (isRated && !existingReview) {
+    return (
+      <div className="max-w-2xl">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <Lock size={24} className="text-yellow-500" />
+            <div>
+              <h3 className="text-lg font-semibold text-yellow-900">Review Already Submitted</h3>
+              <p className="text-yellow-700 text-sm">You have already reviewed this product.</p>
+            </div>
+          </div>
+          <div className="bg-white rounded-md p-4 border border-yellow-100">
+            <p className="text-yellow-800 text-sm">
+              You can only submit one review per product. If you need to update your review, 
+              please contact support or check the comments list for your existing review.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // If user has already reviewed, show their current review with edit option
@@ -222,6 +251,7 @@ export default function AddCommentForm({ productId, productName, onCommentAdded 
                 onMouseEnter={() => setHoverRating(star)}
                 onMouseLeave={() => setHoverRating(0)}
                 className="p-1 transition-transform hover:scale-110"
+                disabled={isRated && !existingReview} // Disable if rated but no review found
               >
                 <Star
                   size={32}
@@ -229,7 +259,7 @@ export default function AddCommentForm({ productId, productName, onCommentAdded 
                     star <= (hoverRating || rating)
                       ? 'text-yellow-400 fill-current'
                       : 'text-gray-300'
-                  }`}
+                  } ${isRated && !existingReview ? 'opacity-50 cursor-not-allowed' : ''}`}
                 />
               </button>
             ))}
@@ -237,6 +267,11 @@ export default function AddCommentForm({ productId, productName, onCommentAdded 
               {rating > 0 ? `${rating}.0 stars` : 'Select rating'}
             </span>
           </div>
+          {isRated && !existingReview && (
+            <p className="text-xs text-yellow-600 mt-2">
+              You have already rated this product
+            </p>
+          )}
         </div>
 
         {/* Comment Textarea */}
@@ -249,13 +284,16 @@ export default function AddCommentForm({ productId, productName, onCommentAdded 
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             rows={6}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none ${
+              isRated && !existingReview ? 'bg-gray-100 cursor-not-allowed' : ''
+            }`}
             placeholder={
               isRated 
                 ? "Update your experience with this product..." 
                 : "Share your experience with this product. What did you like or dislike? How does it compare to similar products?"
             }
             maxLength={1000}
+            disabled={isRated && !existingReview} // Disable if rated but no review found
           />
           <div className="flex justify-between mt-1">
             <span className="text-xs text-gray-500">
@@ -269,7 +307,7 @@ export default function AddCommentForm({ productId, productName, onCommentAdded 
 
         {/* Submit Buttons */}
         <div className="flex justify-end space-x-3">
-          {isRated && (
+          {isRated && existingReview && (
             <button
               type="button"
               onClick={() => setIsEditing(false)}
@@ -281,7 +319,7 @@ export default function AddCommentForm({ productId, productName, onCommentAdded 
           )}
           <button
             type="submit"
-            disabled={isLoading || rating === 0}
+            disabled={isLoading || rating === 0 || (isRated && !existingReview)}
             className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
           >
             <Send size={16} />
@@ -309,6 +347,9 @@ export default function AddCommentForm({ productId, productName, onCommentAdded 
           <li>• Be honest and detailed in your feedback</li>
           {isRated && (
             <li>• You can update your review as many times as needed</li>
+          )}
+          {!isRated && (
+            <li>• You can only submit one review per product</li>
           )}
         </ul>
       </div>
