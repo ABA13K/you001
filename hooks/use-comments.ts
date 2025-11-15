@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// hooks/use-comments.ts - Updated error handling
+// hooks/use-comments.ts
 import { useState, useCallback } from 'react'
 import {
     getProductCommentsPublic,
@@ -8,10 +8,11 @@ import {
     updateProductComment,
     deleteProductComment
 } from '@/lib/api/comment'
-import { Comment } from '@/types/comment'
+import { Comment, PublicCommentsResponse, AuthenticatedCommentsWithRatingStatusResponse } from '@/types/comment'
 
 export function useComments() {
     const [comments, setComments] = useState<Comment[]>([])
+    const [isRated, setIsRated] = useState<boolean>(false)
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [hasMore, setHasMore] = useState(false)
@@ -35,11 +36,15 @@ export function useComments() {
         setIsLoading(true)
         setError(null)
         try {
-            const response = await getProductCommentsPublic(productId, limit, offset)
+            const response = await getProductCommentsPublic(productId, limit, offset) as PublicCommentsResponse
             console.log('📥 Public comments response:', response)
 
             const commentsData = safeArray(response.data?.comments)
             console.log('📊 Extracted comments:', commentsData)
+
+            // Set isRated from API response
+            setIsRated(response.data?.is_rated || false)
+            console.log('⭐ User has rated:', response.data?.is_rated)
 
             if (offset && offset > 0) {
                 setComments(prev => [...prev, ...commentsData])
@@ -53,6 +58,7 @@ export function useComments() {
             const message = extractErrorMessage(err)
             setError(message)
             setComments([])
+            setIsRated(false)
             throw new Error(message)
         } finally {
             setIsLoading(false)
@@ -68,24 +74,53 @@ export function useComments() {
             const response = await getProductComments(productId, limit, offset)
             console.log('✅ Authenticated comments loaded:', response)
 
-            const commentsData = safeArray(response.data)
-            console.log('📊 Extracted comments:', commentsData)
+            // Check if response has the new format with is_rated
+            if (response.data && typeof response.data === 'object' && 'is_rated' in response.data) {
+                // New format with is_rated field
+                const typedResponse = response as AuthenticatedCommentsWithRatingStatusResponse
+                const commentsData = safeArray(typedResponse.data.comments)
 
-            if (offset && offset > 0) {
-                setComments(prev => [...prev, ...commentsData])
+                setIsRated(typedResponse.data.is_rated || false)
+                console.log('⭐ User has rated (new format):', typedResponse.data.is_rated)
+
+                if (offset && offset > 0) {
+                    setComments(prev => [...prev, ...commentsData])
+                } else {
+                    setComments(commentsData)
+                }
+                setHasMore(typedResponse.data.has_more || false)
+                setNextOffset(typedResponse.data.next_offset)
             } else {
-                setComments(commentsData)
+                // Old format - just array of comments
+                const commentsData = safeArray(response.data)
+                console.log('📊 Extracted comments:', commentsData)
+
+                // For authenticated API without is_rated, check if any comment is mine
+                const userHasRated = commentsData.some(comment => comment.is_mine === true)
+                setIsRated(userHasRated)
+                console.log('⭐ User has rated (old format):', userHasRated)
+
+                if (offset && offset > 0) {
+                    setComments(prev => [...prev, ...commentsData])
+                } else {
+                    setComments(commentsData)
+                }
+                setHasMore(false)
             }
-            setHasMore(false)
-            return commentsData
+
+            return comments
         } catch (err) {
             console.error('❌ Authenticated API failed, falling back to public API:', err)
 
             // Fallback to public API
             try {
                 console.log('🔄 Falling back to public comments API...')
-                const publicResponse = await getProductCommentsPublic(productId, limit, offset)
+                const publicResponse = await getProductCommentsPublic(productId, limit, offset) as PublicCommentsResponse
                 const commentsData = safeArray(publicResponse.data?.comments)
+
+                // Set isRated from public API response
+                setIsRated(publicResponse.data?.is_rated || false)
+                console.log('⭐ User has rated (public fallback):', publicResponse.data?.is_rated)
 
                 setComments(commentsData)
                 setHasMore(publicResponse.data?.has_more || false)
@@ -97,6 +132,7 @@ export function useComments() {
                 const message = extractErrorMessage(fallbackError)
                 setError(message)
                 setComments([])
+                setIsRated(false)
                 throw new Error(message)
             }
         } finally {
@@ -105,7 +141,7 @@ export function useComments() {
     }, [])
 
     // Add new comment/rating
-    const addComment = useCallback(async (productId: number, comment: string, score: number) => {
+    const addComment = useCallback(async (productId: string, comment: string, score: number) => {
         setIsLoading(true)
         setError(null)
         try {
@@ -116,11 +152,14 @@ export function useComments() {
 
             console.log('📤 Adding comment:', { productId, commentData })
 
-            const response = await addProductComment(productId.toString(), commentData)
+            const response = await addProductComment(productId, commentData)
             console.log('✅ Comment added successfully:', response)
 
+            // Set isRated to true since user just rated
+            setIsRated(true)
+
             // Reload comments to get the updated list
-            await loadComments(productId.toString())
+            await loadComments(productId)
 
             return response
         } catch (err) {
@@ -177,6 +216,9 @@ export function useComments() {
             // Remove comment from local state immediately
             setComments(prev => safeArray(prev).filter(comment => comment.rating_id !== ratingId))
 
+            // Set isRated to false since user deleted their rating
+            setIsRated(false)
+
             return response
         } catch (err) {
             const message = extractErrorMessage(err)
@@ -204,6 +246,7 @@ export function useComments() {
 
     return {
         comments: safeArray(comments),
+        isRated,
         isLoading,
         error,
         hasMore,

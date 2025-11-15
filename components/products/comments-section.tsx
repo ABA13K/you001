@@ -14,9 +14,10 @@ interface CommentsSectionProps {
 }
 
 export default function CommentsSection({ productId, productName }: CommentsSectionProps) {
-  const { comments, isLoading, error, hasMore, loadMoreComments, loadCommentsPublic, loadComments, addComment, updateComment, deleteComment } = useComments()
+  const { comments, isRated, isLoading, error, hasMore, loadMoreComments, loadCommentsPublic, loadComments, addComment, updateComment, deleteComment } = useComments()
   const { isAuthenticated } = useAuthOperations()
   const [apiError, setApiError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'comments' | 'add'>('comments')
 
   // Safe array utility
   const safeArray = <T,>(value: T[] | null | undefined): T[] => {
@@ -24,21 +25,12 @@ export default function CommentsSection({ productId, productName }: CommentsSect
   }
 
   const commentsArray = safeArray(comments)
-  
-  // Memoized user comment detection
-  const userComment = useMemo(() => 
-    commentsArray.find(comment => comment.is_mine === true),
-    [commentsArray]
-  )
 
-  // Determine initial active tab
-  const getInitialActiveTab = (): 'comments' | 'add' => {
-    return 'comments' // Always start with comments tab for better UX
-  }
+  console.log('⭐ User has rated:', isRated)
+  console.log('📝 All comments:', commentsArray)
+  console.log('🔐 Is authenticated:', isAuthenticated)
 
-  const [activeTab, setActiveTab] = useState<'comments' | 'add'>(getInitialActiveTab)
-
-  // Memoized tab configuration
+  // Memoized tab configuration - now using isRated instead of finding user comment
   const tabConfig = useMemo(() => {
     if (!isAuthenticated) {
       return {
@@ -47,7 +39,7 @@ export default function CommentsSection({ productId, productName }: CommentsSect
       }
     }
 
-    if (userComment) {
+    if (isRated) {
       return {
         showAddTab: true,
         addTabLabel: 'Edit Your Review',
@@ -58,7 +50,7 @@ export default function CommentsSection({ productId, productName }: CommentsSect
       showAddTab: true,
       addTabLabel: 'Write a Review',
     }
-  }, [isAuthenticated, userComment])
+  }, [isAuthenticated, isRated])
 
   // Load comments data
   useEffect(() => {
@@ -81,15 +73,17 @@ export default function CommentsSection({ productId, productName }: CommentsSect
     loadCommentsData()
   }, [productId, isAuthenticated, loadComments, loadCommentsPublic])
 
-  // Handle user navigation to add tab when they already have a comment
-  const handleAddTabClick = () => {
-    if (userComment) {
-      // If user has a comment and clicks "Edit Your Review", ensure we're on add tab
-      setActiveTab('add')
-    } else {
-      setActiveTab('add')
+  // Auto-switch to comments tab if user has already rated
+  useEffect(() => {
+    if (isRated && activeTab === 'add') {
+      console.log('🔄 Auto-switching to comments tab because user has already rated')
+      const timer = setTimeout(() => {
+        setActiveTab('comments')
+      }, 0)
+      
+      return () => clearTimeout(timer)
     }
-  }
+  }, [isRated, activeTab])
 
   // Handle comment added callback
   const handleCommentAdded = () => {
@@ -130,7 +124,7 @@ export default function CommentsSection({ productId, productName }: CommentsSect
                 </div>
                 <span className="text-gray-500">•</span>
                 <span className="text-gray-600">{commentsArray.length} reviews</span>
-                {userComment && (
+                {isRated && (
                   <>
                     <span className="text-gray-500">•</span>
                     <span className="text-blue-600 text-sm font-medium">You&apos;ve reviewed this product</span>
@@ -219,7 +213,7 @@ export default function CommentsSection({ productId, productName }: CommentsSect
             </button>
             {tabConfig.showAddTab && (
               <button
-                onClick={handleAddTabClick}
+                onClick={() => setActiveTab('add')}
                 className={`py-2 px-4 border-b-2 font-medium text-sm ${
                   activeTab === 'add'
                     ? 'border-blue-500 text-blue-600'
@@ -245,7 +239,7 @@ export default function CommentsSection({ productId, productName }: CommentsSect
           />
         ) : (
           <AddCommentForm
-            productId={parseInt(productId)}
+            productId={productId}
             productName={productName}
             onCommentAdded={handleCommentAdded}
           />

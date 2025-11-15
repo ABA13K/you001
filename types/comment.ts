@@ -1,20 +1,18 @@
 // types/comment.ts
-// types/comment.ts
 export interface Comment {
     rating_id: number
     user_name: string
     comment: string
     score: string
     is_mine: boolean
-    has_comment: boolean // Add this field
+    has_comment: boolean
 }
-
-// ... rest of your types remain the same
 
 // For public API: /public/products/{id}/comments
 export interface PublicCommentsResponse {
     message: string
     data: {
+        is_rated: boolean // Add this field
         comments: Comment[]
         next_offset?: number
         has_more?: boolean
@@ -25,6 +23,17 @@ export interface PublicCommentsResponse {
 export interface AuthenticatedCommentsResponse {
     message: string
     data: Comment[]
+}
+
+// Add this new interface for the authenticated response with is_rated
+export interface AuthenticatedCommentsWithRatingStatusResponse {
+    message: string
+    data: {
+        is_rated: boolean
+        comments: Comment[]
+        next_offset?: number
+        has_more?: boolean
+    }
 }
 
 export interface AddCommentData {

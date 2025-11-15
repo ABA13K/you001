@@ -1,7 +1,8 @@
-// lib/api/comments.ts - Updated with better error handling
+// lib/api/comments.ts - Updated with better error handling and new types
 import {
     PublicCommentsResponse,
     AuthenticatedCommentsResponse,
+    AuthenticatedCommentsWithRatingStatusResponse,
     AddCommentData,
     UpdateCommentData,
     AddCommentResponse,
@@ -115,12 +116,12 @@ export async function getProductCommentsPublic(
     }
 }
 
-// Get product comments (authenticated)
+// Get product comments (authenticated) - Updated to handle both response formats
 export async function getProductComments(
     productId: string,
     limit?: number,
     offset?: number
-): Promise<AuthenticatedCommentsResponse> {
+): Promise<AuthenticatedCommentsResponse | AuthenticatedCommentsWithRatingStatusResponse> {
     let url = `${API_BASE_URL}/products/${productId}/comments`
 
     const params = new URLSearchParams()
@@ -135,6 +136,44 @@ export async function getProductComments(
     return commentsFetch(url, {
         method: 'GET',
     })
+}
+
+// Alternative function specifically for the new format with is_rated
+export async function getProductCommentsWithRatingStatus(
+    productId: string,
+    limit?: number,
+    offset?: number
+): Promise<AuthenticatedCommentsWithRatingStatusResponse> {
+    let url = `${API_BASE_URL}/products/${productId}/comments`
+
+    const params = new URLSearchParams()
+    if (limit) params.append('limit', limit.toString())
+    if (offset) params.append('offset', offset.toString())
+
+    const queryString = params.toString()
+    if (queryString) {
+        url += `?${queryString}`
+    }
+
+    const response = await commentsFetch(url, {
+        method: 'GET',
+    })
+
+    // Ensure the response has the expected structure
+    if (response.data && typeof response.data === 'object') {
+        return response as AuthenticatedCommentsWithRatingStatusResponse;
+    }
+
+    // If it's the old format, convert it to the new format
+    return {
+        message: response.message,
+        data: {
+            is_rated: Array.isArray(response.data) ? response.data.some((comment: { is_mine: boolean }) => comment.is_mine === true) : false,
+            comments: Array.isArray(response.data) ? response.data : [],
+            next_offset: offset ? offset + (limit || 10) : undefined,
+            has_more: false
+        }
+    };
 }
 
 // Add new rating/comment
