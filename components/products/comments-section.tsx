@@ -18,7 +18,7 @@ export default function CommentsSection({ productId, productName }: CommentsSect
   const { isAuthenticated } = useAuthOperations()
   const [apiError, setApiError] = useState<string | null>(null)
   
-  // Always start with comments tab, never with add tab
+  // Always start with comments tab
   const [activeTab, setActiveTab] = useState<'comments' | 'add'>('comments')
 
   // Safe array utility
@@ -27,33 +27,37 @@ export default function CommentsSection({ productId, productName }: CommentsSect
   }
 
   const commentsArray = safeArray(comments)
+  
+  // Find user's specific comment using is_mine field for editing
+  const userComment = commentsArray.find(comment => comment.is_mine === true)
 
-  console.log('⭐ User has rated:', isRated)
+  console.log('⭐ is_rated (user commented):', isRated)
+  console.log('👤 is_mine comment found:', userComment)
   console.log('📝 All comments:', commentsArray)
   console.log('🔐 Is authenticated:', isAuthenticated)
 
-  // Memoized tab configuration - if user has rated, they can only edit, not write new
+  // Memoized tab configuration
   const tabConfig = useMemo(() => {
     if (!isAuthenticated) {
       return {
         showAddTab: false,
         addTabLabel: 'Write a Review',
-        canAddNewReview: false
+        description: 'Please log in to write a review'
       }
     }
 
     if (isRated) {
       return {
-        showAddTab: true, // Show edit tab
+        showAddTab: true, // Show edit tab when user has rated
         addTabLabel: 'Edit Your Review',
-        canAddNewReview: false // Cannot add new review, only edit
+        description: 'Update your existing review'
       }
     }
 
     return {
       showAddTab: true,
       addTabLabel: 'Write a Review',
-      canAddNewReview: true // Can add new review
+      description: 'Share your thoughts about this product'
     }
   }, [isAuthenticated, isRated])
 
@@ -78,7 +82,7 @@ export default function CommentsSection({ productId, productName }: CommentsSect
     loadCommentsData()
   }, [productId, isAuthenticated, loadComments, loadCommentsPublic])
 
-  // Auto-switch to comments tab if user has already rated and somehow ended up on add tab
+  // Auto-switch to comments tab if user has already rated
   useEffect(() => {
     if (isRated && activeTab === 'add') {
       console.log('🔄 Auto-switching to comments tab because user has already rated')
@@ -89,20 +93,6 @@ export default function CommentsSection({ productId, productName }: CommentsSect
       return () => clearTimeout(timer)
     }
   }, [isRated, activeTab])
-
-  // Handle tab click - prevent going to add tab if user has already rated
-  const handleTabClick = (tab: 'comments' | 'add') => {
-    if (tab === 'add' && isRated) {
-      // If user has rated and clicks "Edit Your Review", allow it
-      setActiveTab('add')
-    } else if (tab === 'add' && !isRated) {
-      // If user hasn't rated and clicks "Write a Review", allow it
-      setActiveTab('add')
-    } else {
-      // Always allow switching to comments tab
-      setActiveTab(tab)
-    }
-  }
 
   // Handle comment added/updated callback
   const handleCommentAdded = () => {
@@ -146,7 +136,9 @@ export default function CommentsSection({ productId, productName }: CommentsSect
                 {isRated && (
                   <>
                     <span className="text-gray-500">•</span>
-                    <span className="text-blue-600 text-sm font-medium">You&apos;ve reviewed this product</span>
+                    <span className="text-blue-600 text-sm font-medium">
+                      {userComment ? 'You can edit your review' : 'You\'ve reviewed this product'}
+                    </span>
                   </>
                 )}
               </div>
@@ -221,7 +213,7 @@ export default function CommentsSection({ productId, productName }: CommentsSect
         <div className="border-b border-gray-200 mb-6">
           <nav className="flex -mb-px">
             <button
-              onClick={() => handleTabClick('comments')}
+              onClick={() => setActiveTab('comments')}
               className={`py-2 px-4 border-b-2 font-medium text-sm ${
                 activeTab === 'comments'
                   ? 'border-blue-500 text-blue-600'
@@ -232,7 +224,7 @@ export default function CommentsSection({ productId, productName }: CommentsSect
             </button>
             {tabConfig.showAddTab && (
               <button
-                onClick={() => handleTabClick('add')}
+                onClick={() => setActiveTab('add')}
                 className={`py-2 px-4 border-b-2 font-medium text-sm ${
                   activeTab === 'add'
                     ? 'border-blue-500 text-blue-600'
