@@ -10,54 +10,143 @@ export default async function MainCategoriesServer() {
     const categories = response.data
 
     return (
-      <section className="bg-white py-12">
+      <section className="bg-gradient-to-br from-blue-50 via-sky-50 to-cyan-50 py-16">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900">Shop by Category</h2>
-            <p className="text-gray-600 mt-2">
-              Discover products from our main categories
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Shop by Category
+            </h2>
+            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+              Discover products from our main categories with immersive 3D experience
             </p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-8">
-            {categories.map((category) => (
+            {categories.map((category, index) => (
               <Link
                 key={category.id}
                 href={`/category/${category.id}`}
-                className="group text-center"
+                className="group block text-center"
+                style={{
+                  perspective: '1000px',
+                }}
               >
-                <div className="relative aspect-square mb-4 overflow-hidden rounded-full bg-gray-100 shadow-lg hover:shadow-xl transition-all duration-500 ease-out group-hover:shadow-2xl transform group-hover:-translate-y-2">
-                  <Image
-                    src={category.image}
-                    alt={category.name}
-                    fill
-                    className="object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
-                    sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
-                  />
-                  <div className="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full" />
-                  <div className="absolute inset-0 rounded-full border-2 border-transparent group-hover:border-blue-400/30 transition-all duration-300" />
+                {/* 3D Card Container */}
+                <div 
+                  className="relative aspect-square mb-6 overflow-hidden rounded-2xl transition-all duration-700 ease-out group-hover:duration-300"
+                  style={{
+                    transformStyle: 'preserve-3d',
+                    transform: 'rotateY(0deg) rotateX(0deg)',
+                  }}
+                >
+                  {/* Main 3D Element */}
+                  <div className="relative w-full h-full transform-gpu transition-all duration-700 ease-out group-hover:rotate-y-15 group-hover:rotate-x-5 group-hover:scale-105">
+                    
+                    {/* Background Glow Effect */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 via-purple-400/20 to-cyan-400/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl" />
+                    
+                    {/* 3D Card with Multiple Layers */}
+                    <div className="relative w-full h-full bg-white rounded-2xl shadow-2xl transform-gpu transition-all duration-500 ease-out group-hover:shadow-2xl group-hover:shadow-blue-500/25 border border-white/50">
+                      
+                      {/* Top Lighting Effect */}
+                      <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent rounded-t-2xl opacity-60" />
+                      
+                      {/* Bottom Shadow Effect */}
+                      <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/5 to-transparent rounded-b-2xl" />
+                      
+                      {/* Left Side Shadow */}
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-r from-black/10 to-transparent rounded-l-2xl" />
+                      
+                      {/* Right Side Highlight */}
+                      <div className="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-l from-white/60 to-transparent rounded-r-2xl" />
+
+                      {/* Image Container with 3D Depth */}
+                      <div className="relative w-full h-full p-4">
+                        <div className="relative w-full h-full overflow-hidden rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 shadow-inner">
+                          <Image
+                            src={category.image}
+                            alt={category.name}
+                            fill
+                            className="object-cover transform-gpu transition-all duration-700 ease-out group-hover:scale-110"
+                            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
+                          />
+                          
+                          {/* Reflective Overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/10 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl" />
+                          
+                          {/* Hover Shine Effect */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-45 transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-in-out" />
+                        </div>
+                      </div>
+
+                      {/* Floating Badge */}
+                      <div className="absolute -top-2 -right-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg transform-gpu transition-all duration-300 ease-out group-hover:scale-110 group-hover:rotate-12">
+                        {category.products_count}
+                      </div>
+                    </div>
+
+                    {/* 3D Shadow Effect */}
+                    <div 
+                      className="absolute inset-0 bg-black/20 rounded-2xl blur-md -z-10 transition-all duration-500 ease-out group-hover:blur-lg group-hover:scale-95 group-hover:translate-y-4"
+                      style={{
+                        transform: 'translateZ(-20px)',
+                      }}
+                    />
+                  </div>
                 </div>
-                
-                <div className="transform group-hover:translate-y-1 transition-transform duration-300">
-                  <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-all duration-300">
+
+                {/* Text Content with 3D Effect */}
+                <div className="transform-gpu transition-all duration-500 ease-out group-hover:translate-y-2">
+                  <h3 className="font-bold text-gray-900 text-lg group-hover:text-blue-600 transition-colors duration-300 relative inline-block">
                     {category.name}
+                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-500 ease-out" />
                   </h3>
-                  <p className="text-sm text-gray-500 opacity-0 group-hover:opacity-100 transform group-hover:translate-y-0 -translate-y-2 transition-all duration-300 delay-100">
-                    {category.products_count} {category.products_count === 1 ? 'product' : 'products'}
+                  <p className="text-sm text-gray-500 mt-2 opacity-0 transform translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 delay-100">
+                    Explore collection
                   </p>
+                </div>
+
+                {/* Floating Particles Effect */}
+                <div className="absolute inset-0 overflow-hidden rounded-2xl -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                  {[...Array(3)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="absolute w-2 h-2 bg-blue-400/30 rounded-full animate-float"
+                      style={{
+                        top: `${20 + i * 30}%`,
+                        left: `${10 + i * 40}%`,
+                        animationDelay: `${i * 0.5}s`,
+                        animationDuration: '3s',
+                      }}
+                    />
+                  ))}
                 </div>
               </Link>
             ))}
           </div>
         </div>
+
+        {/* Add custom animations */}
+        <style jsx global>{`
+          @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+          }
+          .animate-float {
+            animation: float 3s ease-in-out infinite;
+          }
+        `}</style>
       </section>
     )
   } catch (error) {
     return (
-      <section className="bg-white py-12">
+      <section className="bg-gradient-to-br from-blue-50 via-sky-50 to-cyan-50 py-16">
         <div className="container mx-auto px-4 text-center">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
-            <h3 className="text-lg font-semibold text-red-800 mb-2">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl p-8 max-w-md mx-auto border border-white/20">
+            <div className="w-16 h-16 bg-gradient-to-r from-red-100 to-red-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <span className="text-2xl">⚠️</span>
+            </div>
+            <h3 className="text-xl font-bold text-red-800 mb-2">
               Failed to load categories
             </h3>
             <p className="text-red-600">
