@@ -1,157 +1,152 @@
-// components/products/product-card-with-badges.tsx
-'use client'
+'use client';
 
-import { Product } from '@/types/product'
-import Link from 'next/link'
-import { Star, Heart, ShoppingCart, Zap, Trophy, TrendingUp } from 'lucide-react'
-import { useState } from 'react'
+import { useState } from 'react';
+import { Product } from '@/types/product';
+import Image from 'next/image';
+import Link from 'next/link';
 
-interface ProductCardProps {
-  product: Product
-  showRatingBadge?: boolean
-  showBestSellerBadge?: boolean
-  rank?: number
+interface ProductCardWithBadgesProps {
+  product: Product;
 }
 
-export default function ProductCardWithBadges({ 
-  product, 
-  showRatingBadge = false,
-  showBestSellerBadge = false,
-  rank 
-}: ProductCardProps) {
-  const [isWishlisted, setIsWishlisted] = useState(false)
-  const [isAddingToCart, setIsAddingToCart] = useState(false)
+export default function ProductCardWithBadges({ product }: ProductCardWithBadgesProps) {
+  const [isFavorite, setIsFavorite] = useState(product.is_favorite);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
 
-  const hasDiscount = parseFloat(product.discount_percentage) > 0
-  const isTopRated = product.total_rating >= 4
+  // FIXED: discount_percentage is already a number, no need for parseFloat
+  const hasDiscount = product.discount_percentage > 0;
+  const isTopRated = product.total_rating >= 4;
+  
+  // FIXED: price_after_discount might be string or number
+  // Convert both to numbers for calculation
+  const originalPrice = parseFloat(product.original_price);
+  const priceAfterDiscount = parseFloat(product.price_after_discount);
   const discountAmount = hasDiscount 
-    ? (parseFloat(product.original_price) - product.price_after_discount).toFixed(2)
-    : 0
+    ? (originalPrice - priceAfterDiscount).toFixed(2)
+    : '0';
 
-  const handleAddToCart = async () => {
-    setIsAddingToCart(true)
-    await new Promise(resolve => setTimeout(resolve, 500))
-    setIsAddingToCart(false)
-  }
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsAddingToCart(true);
+    // Add to cart logic here
+    setTimeout(() => setIsAddingToCart(false), 1000);
+  };
+
+  const toggleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsFavorite(!isFavorite);
+    // API call to update favorite status
+  };
 
   return (
-    <div className="group bg-white rounded-lg shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 relative">
-      {/* Multiple Badges */}
-      <div className="absolute top-2 left-2 z-10 flex flex-col space-y-1">
+    <Link href={`/product/${product.id}`} className="group block">
+      <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100">
+        {product.image && (
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            sizes="(max-width: 768px) 50vw, 20vw"
+          />
+        )}
+        
         {/* Discount Badge */}
         {hasDiscount && (
-          <div className="bg-red-500 text-white px-2 py-1 rounded text-xs font-semibold">
+          <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded-md text-sm font-medium z-10">
             -{product.discount_percentage}%
           </div>
         )}
         
         {/* Top Rated Badge */}
-        {showRatingBadge && isTopRated && (
-          <div className="bg-yellow-500 text-white px-2 py-1 rounded text-xs font-semibold flex items-center">
-            <Star size={10} className="mr-1 fill-current" />
-            Top Rated
+        {isTopRated && (
+          <div className="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-1 rounded-md text-sm font-medium z-10">
+            ⭐ Top Rated
           </div>
         )}
         
-        {/* Best Seller Badge */}
-        {showBestSellerBadge && rank && rank <= 3 && (
-          <div className={`px-2 py-1 rounded text-xs font-semibold flex items-center text-white ${
-            rank === 1 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
-            rank === 2 ? 'bg-gradient-to-r from-gray-500 to-gray-700' :
-            'bg-gradient-to-r from-orange-400 to-red-500'
-          }`}>
-            <TrendingUp size={10} className="mr-1" />
-            #{rank}
-          </div>
-        )}
-      </div>
-
-      {/* New Badge */}
-      <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-semibold flex items-center">
-        <Zap size={10} className="mr-1" />
-        NEW
-      </div>
-
-      {/* Image Container */}
-      <div className="relative aspect-square overflow-hidden rounded-t-lg bg-gray-100">
-        <img
-          src={product.image}
-          alt={product.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-        />
-        
-        {/* Action Buttons */}
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <button
-            onClick={() => setIsWishlisted(!isWishlisted)}
-            className={`p-2 rounded-full bg-white shadow-md hover:shadow-lg transition-all ${
-              isWishlisted ? 'text-red-500' : 'text-gray-600'
-            }`}
-          >
-            <Heart size={18} fill={isWishlisted ? 'currentColor' : 'none'} />
-          </button>
-        </div>
-
-        {/* Add to Cart Button */}
+        {/* Favorite Button */}
         <button
-          onClick={handleAddToCart}
-          disabled={isAddingToCart}
-          className="absolute bottom-2 left-2 right-2 bg-black text-white py-2 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 disabled:opacity-50 flex items-center justify-center space-x-1 text-sm"
+          onClick={toggleFavorite}
+          className="absolute bottom-2 right-2 p-2 rounded-full bg-white/80 hover:bg-white transition-colors z-10"
         >
-          <ShoppingCart size={16} />
-          <span>{isAddingToCart ? 'Adding...' : 'Add to Cart'}</span>
+          <svg
+            className={`w-5 h-5 ${
+              isFavorite ? 'text-red-500' : 'text-gray-400'
+            }`}
+            fill={isFavorite ? 'currentColor' : 'none'}
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+            />
+          </svg>
         </button>
       </div>
-
-      {/* Content */}
-      <div className="p-4">
-        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 hover:text-blue-600 transition-colors min-h-[3rem]">
-          <Link href={`/product/${product.id}`}>
-            {product.name}
-          </Link>
+      
+      <div className="mt-3">
+        <h3 className="font-medium text-gray-900 group-hover:text-blue-600 line-clamp-1">
+          {product.name}
         </h3>
-
-        {/* Rating */}
-        <div className="flex items-center space-x-1 mb-3">
-          <div className="flex">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <Star
-                key={star}
-                size={14}
-                className={`${
-                  star <= Math.floor(product.total_rating)
-                    ? 'text-yellow-400 fill-current'
-                    : 'text-gray-300'
-                }`}
-              />
-            ))}
-          </div>
-          <span className="text-sm text-gray-600">
-            ({product.total_rating})
-          </span>
-        </div>
-
-        {/* Price */}
-        <div className="flex items-center space-x-2">
+        <p className="text-sm text-gray-500 line-clamp-2 mt-1">
+          {product.description}
+        </p>
+        
+        <div className="flex items-center gap-2 mt-2">
           {hasDiscount ? (
             <>
-              <span className="text-lg font-bold text-gray-900">
-                ${product.price_after_discount.toFixed(2)}
+              <span className="font-bold text-gray-900 text-lg">
+                ${priceAfterDiscount.toFixed(2)}
               </span>
-              <span className="text-sm text-gray-500 line-through">
-                ${product.original_price}
+              <span className="text-sm line-through text-gray-500">
+                ${originalPrice.toFixed(2)}
               </span>
-              <span className="text-sm text-green-600 font-semibold">
+              <span className="text-xs text-red-600 font-medium">
                 Save ${discountAmount}
               </span>
             </>
           ) : (
-            <span className="text-lg font-bold text-gray-900">
-              ${product.original_price}
+            <span className="font-bold text-gray-900 text-lg">
+              ${originalPrice.toFixed(2)}
             </span>
           )}
         </div>
+        
+        {/* Rating */}
+        <div className="flex items-center justify-between mt-2">
+          <div className="flex items-center gap-1">
+            <div className="flex">
+              {[...Array(5)].map((_, i) => (
+                <span
+                  key={i}
+                  className={`text-sm ${
+                    i < Math.floor(product.total_rating)
+                      ? 'text-yellow-400'
+                      : 'text-gray-300'
+                  }`}
+                >
+                  ★
+                </span>
+              ))}
+            </div>
+            <span className="text-xs text-gray-500">
+              ({product.total_rating.toFixed(1)})
+            </span>
+          </div>
+          
+          <button
+            onClick={handleAddToCart}
+            disabled={isAddingToCart}
+            className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isAddingToCart ? 'Adding...' : 'Add to Cart'}
+          </button>
+        </div>
       </div>
-    </div>
-  )
+    </Link>
+  );
 }
