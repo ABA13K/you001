@@ -1,139 +1,58 @@
-// app/product/[id]/page.tsx
-'use client'
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { notFound } from 'next/navigation';
+import ProductGallery from '@/components/products/product-gallery';
+import ProductInfo from '@/components/products/product-info';
+import SimilarProducts from '@/components/products/similar-products';
 
-import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
-import { useProduct } from '@/hooks/use-product'
-import ProductGallery from '@/components/products/product-gallery'
-import ProductInfo from '@/components/products/product-info'
-import ProductProperties from '@/components/products/product-properties'
-import ProductVariants from '@/components/products/product-variants'
-import SimilarProducts from '@/components/products/similar-products'
-import { Loader2 } from 'lucide-react'
-import CommentsSection from '@/components/products/comments-section'
+interface ProductPageProps {
+  params: {
+    id: string;
+  };
+}
 
-export default function ProductPage() {
-  const params = useParams()
-  const productId = params.id as string
-  const { product, similarProducts, isLoading, error, fetchProduct } = useProduct()
-
-  useEffect(() => {
-    if (productId) {
-      fetchProduct(productId)
-    }
-  }, [productId, fetchProduct])
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 size={32} className="animate-spin mx-auto mb-4" />
-          <p>Loading product...</p>
-        </div>
-      </div>
-    )
+export default async function ProductPage({ params }: ProductPageProps) {
+  // You'll need to create an API to fetch single product by ID
+  // For now, we'll use the existing APIs to find the product
+  
+  const productId = parseInt(params.id);
+  if (isNaN(productId)) {
+    notFound();
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="bg-red-50 border border-red-200 rounded-md p-6 max-w-md">
-            <h2 className="text-lg font-semibold text-red-800 mb-2">Error</h2>
-            <p className="text-red-600">{error}</p>
-          </div>
-        </div>
-      </div>
-    )
+  // Fetch all products from different endpoints to find the product
+  // This is temporary until you have a single product API endpoint
+  const locale = 'en';
+  
+  // Try to get product from top rated
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/public/home-page/products/top-rated/${locale}`
+  );
+  
+  if (!response.ok) {
+    notFound();
   }
-
+  
+  const data = await response.json();
+  const product = data.data.find((p: any) => p.id === productId);
+  
   if (!product) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p>Product not found</p>
-        </div>
-      </div>
-    )
+    notFound();
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Main Product Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow-sm">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-6">
-            {/* Product Gallery */}
-            <div>
-              <ProductGallery 
-                mainImage={product.main_image}
-                images={product.images}
-                variants={product.variants}
-              />
-            </div>
-
-            {/* Product Info */}
-            <div>
-              <ProductInfo product={product} />
-            </div>
-          </div>
-        </div>
-
-        {/* Product Details Tabs */}
-        <div className="mt-8 bg-white rounded-lg shadow-sm">
-          <div className="border-b border-gray-200">
-            <nav className="flex -mb-px">
-              <button className="border-b-2 border-blue-500 text-blue-600 py-4 px-6 text-sm font-medium">
-                Description
-              </button>
-              <button className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-6 text-sm font-medium">
-                Specifications
-              </button>
-              <button className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-6 text-sm font-medium">
-                Reviews ({product.total_rating || 0})
-              </button>
-            </nav>
-          </div>
-          <div className="p-6">
-            {/* Description */}
-            <div className="prose max-w-none">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Product Description</h3>
-              <p className="text-gray-700 whitespace-pre-line">{product.description}</p>
-            </div>
-
-            {/* Properties */}
-            {product.properties && product.properties.length > 0 && (
-              <div className="mt-8">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Specifications</h3>
-                <ProductProperties properties={product.properties} />
-              </div>
-            )}
-
-            {/* Variants */}
-            {product.variants && Object.keys(product.variants).length > 0 && (
-              <div className="mt-8">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Available Options</h3>
-                <ProductVariants variants={product.variants} />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Similar Products */}
-        {similarProducts.length > 0 && (
-          <div className="mt-8">
-            <SimilarProducts products={similarProducts} />
-          </div>
-        )}
-
-        {/* Comments Section */}
-        <div className="mt-8">
-          <CommentsSection 
-            productId={productId} 
-            productName={product.name} 
-          />
-        </div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Product Gallery */}
+        <ProductGallery images={[product.image]} mainImage={''} variants={undefined} />
+        
+        {/* Product Info */}
+        <ProductInfo product={product} />
+      </div>
+      
+      {/* Similar Products */}
+      <div className="mt-12">
+        <SimilarProducts currentProductId={productId} />
       </div>
     </div>
-  )
+  );
 }

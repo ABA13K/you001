@@ -1,47 +1,53 @@
-// lib/api/products.ts
-import {
-    LatestProductsResponse,
-    RandomProductsResponse,
-    TopRatedProductsResponse,
-    TopSellingProductsResponse
-} from '@/types/product'
+import { ProductsResponse } from '@/types/product';
 
-const API_BASE_URL = 'https://aa-dev.site/you/api/public'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://aa-dev.site/you/api';
 
-async function fetchProducts<T>(endpoint: string): Promise<T> {
-    try {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            next: { revalidate: 3600 } // Revalidate every hour
-        })
+export const productsApi = {
+    // 3) Get products by sub-category slug
+    getProductsBySubCategory: async (
+        subCategorySlug: string,
+        locale: 'ar' | 'en' = 'en'
+    ): Promise<ProductsResponse> => {
+        const response = await fetch(
+            `${API_BASE_URL}/public/products/sub-categories/${subCategorySlug}/${locale}`
+        );
+        if (!response.ok) throw new Error('Failed to fetch products by sub category');
+        return response.json();
+    },
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`)
-        }
+    // 4) Get top 10 rated products
+    getTopRatedProducts: async (locale: 'ar' | 'en' = 'en'): Promise<ProductsResponse> => {
+        const response = await fetch(
+            `${API_BASE_URL}/public/home-page/products/top-rated/${locale}`
+        );
+        if (!response.ok) throw new Error('Failed to fetch top rated products');
+        return response.json();
+    },
 
-        const data: T = await response.json()
-        return data
-    } catch (error) {
-        console.error(`Error fetching from ${endpoint}:`, error)
-        throw new Error(`Failed to fetch from ${endpoint}`)
-    }
-}
+    // 5) Get latest products
+    getLatestProducts: async (locale: 'ar' | 'en' = 'en'): Promise<ProductsResponse> => {
+        const response = await fetch(
+            `${API_BASE_URL}/public/home-page/products/latest/${locale}`
+        );
+        if (!response.ok) throw new Error('Failed to fetch latest products');
+        return response.json();
+    },
 
-export async function getLatestProducts(): Promise<LatestProductsResponse> {
-    return fetchProducts<LatestProductsResponse>('/home-page/products/latest')
-}
+    // 6) Get random products
+    getRandomProducts: async (locale: 'ar' | 'en' = 'en'): Promise<ProductsResponse> => {
+        const response = await fetch(
+            `${API_BASE_URL}/public/home-page/products/random/${locale}`
+        );
+        if (!response.ok) throw new Error('Failed to fetch random products');
+        return response.json();
+    },
 
-export async function getRandomProducts(): Promise<RandomProductsResponse> {
-    return fetchProducts<RandomProductsResponse>('/home-page/products/random')
-}
-
-export async function getTopRatedProducts(): Promise<TopRatedProductsResponse> {
-    return fetchProducts<TopRatedProductsResponse>('/home-page/products/top-rated')
-}
-
-export async function getTopSellingProducts(): Promise<TopSellingProductsResponse> {
-    return fetchProducts<TopSellingProductsResponse>('/home-page/products/top-selling')
-}
+    // 7) Get top selling products
+    getTopSellingProducts: async (locale: 'ar' | 'en' = 'en'): Promise<ProductsResponse> => {
+        const response = await fetch(
+            `${API_BASE_URL}/public/home-page/products/top-selling/${locale}`
+        );
+        if (!response.ok) throw new Error('Failed to fetch top selling products');
+        return response.json();
+    },
+};

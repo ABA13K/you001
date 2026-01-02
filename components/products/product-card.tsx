@@ -1,138 +1,101 @@
-// components/products/product-card.tsx
-'use client'
+'use client';
 
-import { SearchProduct } from '@/types/search'
-import Link from 'next/link'
-import { Star, ShoppingCart } from 'lucide-react'
-import { useState } from 'react'
-import FavoriteButton from '@/components/products/favorite-button'
+import { Product } from '@/types/product';
+import Image from 'next/image';
+import Link from 'next/link';
 
 interface ProductCardProps {
-  product: {
-    id: number
-    name: string
-    original_price: string
-    discount_percentage: string
-    price_after_discount: number
-    total_rating: number
-    image: string
-  }
+  product: Product;
 }
+
 export default function ProductCard({ product }: ProductCardProps) {
-  const [isAddingToCart, setIsAddingToCart] = useState(false)
-
-  const handleAddToCart = async () => {
-    setIsAddingToCart(true)
-    // Simulate API call - replace with your actual cart API
-    await new Promise(resolve => setTimeout(resolve, 500))
-    setIsAddingToCart(false)
-  }
-
-  // Calculate discount if available
-  const hasDiscount = product.discount_percentage && parseFloat(product.discount_percentage) > 0
-  const discountAmount = hasDiscount && product.price_after_discount
-    ? (parseFloat(product.original_price) - product.price_after_discount).toFixed(2)
-    : "0"
-
-  // Convert total_rating to number for comparison
-  const rating = typeof product.total_rating === 'string' 
-    ? parseFloat(product.total_rating) 
-    : product.total_rating || 0
-
   return (
-    <div className="group bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100">
-      {/* Image Container */}
-      <div className="relative aspect-square overflow-hidden rounded-t-lg bg-gray-100">
-        <img
-          src={product.image}
-          alt={product.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-        />
+    <Link href={`/product/${product.id}`} className="group block">
+      <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100">
+        {product.image && (
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            sizes="(max-width: 768px) 50vw, 20vw"
+          />
+        )}
         
         {/* Discount Badge */}
-        {hasDiscount && (
-          <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-semibold">
+        {product.discount_percentage > 0 && (
+          <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded-md text-sm font-medium">
             -{product.discount_percentage}%
           </div>
         )}
-
-        {/* New Badge */}
-        <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-semibold">
-          New
-        </div>
-
+        
         {/* Favorite Button */}
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <FavoriteButton 
-            productId={product.id.toString()} 
-            size={18}
-          />
-        </div>
-
-        {/* Add to Cart Button */}
         <button
-          onClick={handleAddToCart}
-          disabled={isAddingToCart}
-          className="absolute bottom-2 left-2 right-2 bg-black text-white py-2 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 disabled:opacity-50 flex items-center justify-center space-x-1 text-sm"
+          className="absolute top-2 right-2 p-2 rounded-full bg-white/80 hover:bg-white transition-colors"
+          onClick={(e) => {
+            e.preventDefault();
+            // Handle favorite toggle
+          }}
         >
-          <ShoppingCart size={16} />
-          <span>{isAddingToCart ? 'Adding...' : 'Add to Cart'}</span>
+          <svg
+            className={`w-5 h-5 ${
+              product.is_favorite ? 'text-red-500' : 'text-gray-400'
+            }`}
+            fill={product.is_favorite ? 'currentColor' : 'none'}
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+            />
+          </svg>
         </button>
       </div>
-
-      {/* Content */}
-      <div className="p-4">
-        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 hover:text-blue-600 transition-colors min-h-[3rem]">
-          <Link href={`/product/${product.id}`}>
-            {product.name}
-          </Link>
+      
+      <div className="mt-3">
+        <h3 className="font-medium text-gray-900 group-hover:text-blue-600 line-clamp-1">
+          {product.name}
         </h3>
-
-        {/* Rating - Only show if available */}
-        {rating > 0 && (
-          <div className="flex items-center space-x-1 mb-3">
-            <div className="flex">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star
-                  key={star}
-                  size={14}
-                  className={`${
-                    star <= Math.floor(rating)
-                      ? 'text-yellow-400 fill-current'
-                      : 'text-gray-300'
-                  }`}
-                />
-              ))}
-            </div>
-            <span className="text-sm text-gray-600">
-              ({rating})
-            </span>
-          </div>
-        )}
-
-        {/* Price */}
-        <div className="flex items-center space-x-2">
-          {hasDiscount && product.price_after_discount ? (
+        
+        <div className="flex items-center gap-2 mt-1">
+          {product.discount_percentage > 0 ? (
             <>
-              <span className="text-lg font-bold text-gray-900">
-                ${product.price_after_discount.toFixed(2)}
+              <span className="font-bold text-gray-900">
+                ${parseFloat(product.price_after_discount).toFixed(2)}
               </span>
-              <span className="text-sm text-gray-500 line-through">
-                ${product.original_price}
+              <span className="text-sm line-through text-gray-500">
+                ${parseFloat(product.original_price).toFixed(2)}
               </span>
-              {parseFloat(discountAmount) > 0 && (
-                <span className="text-sm text-green-600 font-semibold">
-                  Save ${discountAmount}
-                </span>
-              )}
             </>
-           ): (
-            <span className="text-lg font-bold text-gray-900">
-              ${product.original_price}
+          ) : (
+            <span className="font-bold text-gray-900">
+              ${parseFloat(product.original_price).toFixed(2)}
             </span>
           )}
         </div>
+        
+        {/* Rating */}
+        <div className="flex items-center gap-1 mt-1">
+          <div className="flex">
+            {[...Array(5)].map((_, i) => (
+              <span
+                key={i}
+                className={`text-sm ${
+                  i < Math.floor(product.total_rating)
+                    ? 'text-yellow-400'
+                    : 'text-gray-300'
+                }`}
+              >
+                ★
+              </span>
+            ))}
+          </div>
+          <span className="text-xs text-gray-500">({product.total_rating})</span>
+        </div>
       </div>
-    </div>
-  )
+    </Link>
+  );
 }

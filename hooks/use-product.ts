@@ -1,41 +1,38 @@
-// hooks/use-product.ts
-import { useState, useCallback } from 'react'
-import { getProduct } from '@/lib/api/productsinfo'
-import { DetailedProduct, SimilarProduct } from '@/types/product'
+import { useQuery } from '@tanstack/react-query';
+import { productsApi } from '@/lib/api/products';
 
-export function useProduct() {
-    const [product, setProduct] = useState<DetailedProduct | null>(null)
-    const [similarProducts, setSimilarProducts] = useState<SimilarProduct[]>([])
-    const [isLoading, setIsLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
+export const useProductsBySubCategory = (subCategorySlug: string, locale: 'ar' | 'en' = 'en') => {
+    return useQuery({
+        queryKey: ['products', 'sub-category', subCategorySlug, locale],
+        queryFn: () => productsApi.getProductsBySubCategory(subCategorySlug, locale),
+        enabled: !!subCategorySlug,
+    });
+};
 
-    const fetchProduct = useCallback(async (productId: string) => {
-        setIsLoading(true)
-        setError(null)
-        try {
-            const response = await getProduct(productId)
-            setProduct(response.data.product)
-            setSimilarProducts(response.data.similar_products || [])
-            return response.data
-        } catch (err) {
-            const message = err instanceof Error ? err.message : 'Failed to fetch product'
-            setError(message)
-            throw err
-        } finally {
-            setIsLoading(false)
-        }
-    }, [])
+export const useTopRatedProducts = (locale: 'ar' | 'en' = 'en') => {
+    return useQuery({
+        queryKey: ['products', 'top-rated', locale],
+        queryFn: () => productsApi.getTopRatedProducts(locale),
+    });
+};
 
-    const clearError = useCallback(() => {
-        setError(null)
-    }, [])
+export const useLatestProducts = (locale: 'ar' | 'en' = 'en') => {
+    return useQuery({
+        queryKey: ['products', 'latest', locale],
+        queryFn: () => productsApi.getLatestProducts(locale),
+    });
+};
 
-    return {
-        product,
-        similarProducts,
-        isLoading,
-        error,
-        fetchProduct,
-        clearError,
-    }
-}
+export const useRandomProducts = (locale: 'ar' | 'en' = 'en') => {
+    return useQuery({
+        queryKey: ['products', 'random', locale],
+        queryFn: () => productsApi.getRandomProducts(locale),
+    });
+};
+
+export const useTopSellingProducts = (locale: 'ar' | 'en' = 'en') => {
+    return useQuery({
+        queryKey: ['products', 'top-selling', locale],
+        queryFn: () => productsApi.getTopSellingProducts(locale),
+    });
+};
