@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import ProductGallery from '@/components/products/product-gallery';
 import ProductInfo from '@/components/products/product-info';
 import SimilarProducts from '@/components/products/similar-products';
+import VariantSelector from '@/components/products/variant-selector';
 
 interface ProductPageProps {
   params: {
@@ -53,6 +54,18 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <div className="mt-12">
         <SimilarProducts currentProductId={productId} />
       </div>
+      {product.variants && Object.keys(product.variants).length > 0 && (
+  <div className="space-y-6">
+    <VariantSelector 
+      variants={product.variants}
+      basePrice={parseFloat(product.price_after_discount)}
+      onVariantChange={(selectedVariants) => {
+        // Handle selected variants
+        console.log('Selected variants:', selectedVariants);
+      }}
+    />
+  </div>
+)}
     </div>
   );
 }

@@ -1,3 +1,6 @@
+import { Key, ReactNode } from "react";
+
+// Basic Product Interface
 export interface Product {
     id: number;
     name: string;
@@ -10,33 +13,85 @@ export interface Product {
     image: string;
 }
 
-export interface ProductDetails extends Product {
-    category: string;
-    category_slug: string;
-    sub_category: string;
-    sub_category_slug: string;
-    brand?: string;
-    sku: string;
-    stock: number;
-    properties: Array<{
-        id: number;
-        name: string;
-        value: string;
-        icon?: string;
-    }>;
-    variants: Array<{
-        id: number;
-        name: string;
-        price: string;
-        image: string;
-        stock: number;
-        properties: Record<string, string>;
-    }>;
+// Product Property (from API response)
+export interface ProductProperty {
+    name: ReactNode;
+    id: Key | null | undefined;
+    key: string;
+    value: string;
+    type: 'text' | 'color' | 'number' | 'boolean';
+}
+
+// Product Variant Option (from variants array in API)
+export interface ProductVariantOption {
+    id: number;
+    value: string;
+    extra_price: string;
+    quantity: number;
     images: string[];
-    specifications: Record<string, string>;
-    tags: string[];
-    created_at: string;
-    updated_at: string;
+}
+
+// Variants grouped by type (Color, Upholstery, Package)
+export interface ProductVariantsGroup {
+    [variantType: string]: ProductVariantOption[];
+}
+
+// Comment/Review Interface
+export interface Comment {
+    rating_id: number;
+    user_name: string;
+    comment: string;
+    score: string;
+    is_mine: boolean;
+}
+
+export interface CommentsResponse {
+    is_rated: boolean;
+    comments: Comment[];
+    next_offset: number;
+    has_more: boolean;
+}
+
+// Main Product Details Interface
+export interface ProductDetails {
+    product: {
+        id_product: number;
+        name: string;
+        description: string;
+        main_image: string;
+        original_price: string;
+        discount_percentage: number;
+        price_after_discount: string;
+        quantity: number;
+        total_rating: number;
+        sales_count: number;
+        is_active: number;
+        is_favorite: boolean;
+        language: string;
+        sub_category_name: string;
+        has_comments: boolean;
+        images: string[];
+        properties: ProductProperty[];
+        variants: ProductVariantsGroup;
+        sub_category: {
+            id: number;
+            name: string;
+            slug: string;
+        };
+    };
+    similar_products: Product[];
+    language: string;
+}
+
+// API Response Interfaces
+export interface ProductDetailsResponse {
+    message: string;
+    data: ProductDetails;
+}
+
+export interface CommentsDataResponse {
+    message: string;
+    data: CommentsResponse;
 }
 
 export interface ProductsResponse {
@@ -44,60 +99,18 @@ export interface ProductsResponse {
     data: Product[];
 }
 
-export interface ProductDetailsResponse {
-    message: string;
-    data: ProductDetails;
-}
-
-export interface Review {
-    id: number;
-    user_id: number;
-    user_name: string;
-    user_avatar?: string;
-    rating: number;
-    comment: string;
-    created_at: string;
-    helpful_count: number;
-}
-
-export interface ReviewsResponse {
-    message: string;
-    data: Review[];
-    average_rating: number;
-    total_reviews: number;
-}
-export interface ProductProperty {
-    id: number;
-    name: string;  // Changed from 'key' to 'name'
-    value: string;
-    icon?: string;
-    description?: string;
-    unit?: string;
-}
-
-// Or if you want to support both 'key' and 'name'
-export interface ProductProperty {
-    id: number;
-    name: string;      // Display name
-    key?: string;      // Optional key for programmatic access
-    value: string;
-    icon?: string;
-}
+// For backward compatibility - remove or update existing ProductVariant type
 export interface ProductVariant {
     id: number;
     name: string;
     price: string;
     image: string;
     stock: number;
-    sku?: string;
-    barcode?: string;
     properties: Record<string, string>;
-    is_default?: boolean;
-    weight?: number;
-    dimensions?: {
-        length: number;
-        width: number;
-        height: number;
-        unit: string;
-    };
+}
+
+// For backward compatibility - remove or update existing ProductVariants type
+export interface ProductVariants {
+    type: string;
+    options: ProductVariantOption[];
 }
