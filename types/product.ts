@@ -15,9 +15,9 @@ export interface Product {
 
 // Product Property (from API response)
 export interface ProductProperty {
-    name: ReactNode;
-    id: Key | null | undefined;
-    key: string;
+    id?: number; // Make optional
+    key: string; // Required for API response
+    name?: string; // Optional display name
     value: string;
     type: 'text' | 'color' | 'number' | 'boolean';
 }

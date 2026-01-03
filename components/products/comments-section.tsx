@@ -9,15 +9,14 @@ import AddCommentForm from './add-comment-form'
 import { MessageSquare, Star, AlertCircle } from 'lucide-react'
 
 interface CommentsSectionProps {
-  productId: string
-  productName: string
+  productId: string | number; // Accept both string and number
+  productName: string;
 }
-
 export default function CommentsSection({ productId, productName }: CommentsSectionProps) {
   const { comments, isRated, isLoading, error, hasMore, loadMoreComments, loadCommentsPublic, loadComments, addComment, updateComment, deleteComment } = useComments()
   const { isAuthenticated } = useAuthOperations()
   const [apiError, setApiError] = useState<string | null>(null)
-  
+    const productIdStr = String(productId);
   // Always start with comments tab
   const [activeTab, setActiveTab] = useState<'comments' | 'add'>('comments')
 
@@ -68,10 +67,10 @@ export default function CommentsSection({ productId, productName }: CommentsSect
       try {
         if (isAuthenticated) {
           console.log('🔐 Loading authenticated comments...')
-          await loadComments(productId)
+          await loadComments(productIdStr)
         } else {
           console.log('🔓 Loading public comments...')
-          await loadCommentsPublic(productId)
+          await loadCommentsPublic(productIdStr)
         }
       } catch (err) {
         console.error('Failed to load comments:', err)
@@ -97,7 +96,7 @@ export default function CommentsSection({ productId, productName }: CommentsSect
   // Handle comment added/updated callback
   const handleCommentAdded = () => {
     // Reload comments to get the updated list and switch to comments tab
-    loadComments(productId)
+    loadComments(productIdStr)
     setActiveTab('comments')
   }
 
@@ -244,13 +243,13 @@ export default function CommentsSection({ productId, productName }: CommentsSect
             isLoading={isLoading}
             error={error}
             hasMore={hasMore}
-            onLoadMore={() => loadMoreComments(productId)}
+            onLoadMore={() => loadMoreComments(productIdStr)}
             onDeleteComment={(ratingId) => deleteComment(ratingId)}
             onUpdateComment={(ratingId, comment, score) => updateComment(ratingId, comment, score)}
           />
         ) : (
           <AddCommentForm
-            productId={productId}
+            productId={productIdStr}
             productName={productName}
             onCommentAdded={handleCommentAdded}
           />
