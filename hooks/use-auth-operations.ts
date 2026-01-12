@@ -1,184 +1,171 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// hooks/use-auth-operations.ts
-import { useCallback } from 'react'
-import {
-    registerUser,
-    loginUser,
-    verifyAccount,
-    forgotPassword,
-    resetPassword,
-    logoutUser
-} from '@/lib/api/auth'
+import { useState } from 'react';
+import { useAuthStore } from '@/store/auth-store';
+import { authApi } from '@/lib/api/auth';
 import {
     RegisterData,
     LoginData,
     VerificationData,
     ForgotPasswordData,
     ResetPasswordData
-} from '@/types/auth'
-import { useAuth } from '@/context/auth-context'
+} from '@/types/auth';
 
-export function useAuthOperations() {
-    const { state, dispatch } = useAuth()
+export const useAuthOperations = () => {
+    const {
+        setUser,
+        setToken,
+        setAuthenticated,
+        setLoading,
+        setError,
+        clearError,
+        user,
+        token,
+        isAuthenticated,
+        isLoading,
+        error
+    } = useAuthStore();
 
-    const login = useCallback(async (loginData: LoginData) => {
-        dispatch({ type: 'SET_LOADING', payload: true })
-        console.log('🚀 Starting login process...')
+    const [operationLoading, setOperationLoading] = useState(false);
+
+    const register = async (data: RegisterData, locale: 'ar' | 'en' = 'en') => {
+        setOperationLoading(true);
+        clearError();
 
         try {
-            const response = await loginUser(loginData)
-            console.log('✅ Login API response:', response)
+            const response = await authApi.register(data, locale);
 
-            // Check if we have user data and token in the response
-            if (response.data && response.token) {
-                // Save to localStorage
-                localStorage.setItem('user', JSON.stringify(response.data))
-                localStorage.setItem('token', response.token)
-                console.log('✅ User data saved to localStorage')
+            // Store email for verification
+            localStorage.setItem('pending_verification_email', data.email);
 
-                // Update auth state
-                dispatch({ type: 'SET_USER', payload: response.data })
-                dispatch({ type: 'SET_LOADING', payload: false })
-                dispatch({ type: 'SET_ERROR', payload: null })
-                console.log('✅ Auth state updated with user')
-
-                return response
-            } else {
-                console.warn('⚠️ Login response missing user data or token:', response)
-                throw new Error('Invalid response format from server')
-            }
+            return response;
         } catch (error: any) {
-            console.error('❌ Login error:', error)
-            const message = error instanceof Error ? error.message : 'Login failed'
-            dispatch({ type: 'SET_LOADING', payload: false })
-            dispatch({ type: 'SET_ERROR', payload: message })
-            throw error
+            setError(error.message || 'Registration failed');
+            throw error;
+        } finally {
+            setOperationLoading(false);
         }
-    }, [dispatch])
+    };
 
-    // Also update the verify function
-    const verify = useCallback(async (verificationData: VerificationData) => {
-        dispatch({ type: 'SET_LOADING', payload: true })
-        console.log('🚀 Starting verification process...')
+    const verifyAccount = async (data: VerificationData, locale: 'ar' | 'en' = 'en') => {
+        setOperationLoading(true);
+        clearError();
 
         try {
-            const response = await verifyAccount(verificationData)
-            console.log('✅ Verification API response:', response)
+            const response = await authApi.verifyAccount(data, locale);
 
-            if (response.data && response.token) {
-                // Save to localStorage
-                localStorage.setItem('user', JSON.stringify(response.data))
-                localStorage.setItem('token', response.token)
-                console.log('✅ User data saved to localStorage after verification')
+            // Update auth store
+            setUser(response.data);
+            setToken(response.token);
+            setAuthenticated(true);
 
-                // Update auth state
-                dispatch({ type: 'SET_USER', payload: response.data })
-                dispatch({ type: 'SET_NEEDS_VERIFICATION', payload: false })
-                dispatch({ type: 'SET_VERIFICATION_EMAIL', payload: null })
-                dispatch({ type: 'SET_LOADING', payload: false })
-                console.log('✅ Auth state updated after verification')
-            } else {
-                console.warn('⚠️ Verification response missing user data or token:', response)
-                throw new Error('Invalid verification response from server')
+            // Clear pending email
+            localStorage.removeItem('pending_verification_email');
+
+            return response;
+        } catch (error: any) {
+            setError(error.message || 'Verification failed');
+            throw error;
+        } finally {
+            setOperationLoading(false);
+        }
+    };
+
+    const login = async (data: LoginData, locale: 'ar' | 'en' = 'en') => {
+        setOperationLoading(true);
+        clearError();
+
+        try {
+            const response = await authApi.login(data, locale);
+
+            // Update auth store
+            setUser(response.data);
+            setToken(response.token);
+            setAuthenticated(true);
+
+            return response;
+        } catch (error: any) {
+            const message = error.message || 'Login failed';
+            setError(message);
+
+            // Check if needs verification
+            if (message.includes('NEEDS_VERIFICATION:')) {
+                // Store email for verification
+                localStorage.setItem('pending_verification_email', data.email);
             }
 
-            return response
-        } catch (error) {
-            console.error('❌ Verification error:', error)
-            const message = error instanceof Error ? error.message : 'Verification failed'
-            dispatch({ type: 'SET_ERROR', payload: message })
-            dispatch({ type: 'SET_LOADING', payload: false })
-            throw error
-        }
-    }, [dispatch])
-
-    // Update register function as well
-    const register = useCallback(async (userData: RegisterData) => {
-        dispatch({ type: 'SET_LOADING', payload: true })
-        console.log('🚀 Starting registration process...')
-
-        try {
-            const response = await registerUser(userData)
-            console.log('✅ Registration API response:', response)
-
-            dispatch({ type: 'SET_VERIFICATION_EMAIL', payload: userData.email })
-            dispatch({ type: 'SET_NEEDS_VERIFICATION', payload: true })
-            dispatch({ type: 'SET_LOADING', payload: false })
-            console.log('✅ Registration successful, should redirect to verification')
-
-            return response
-        } catch (error) {
-            console.error('❌ Registration error:', error)
-            const message = error instanceof Error ? error.message : 'Registration failed'
-            dispatch({ type: 'SET_ERROR', payload: message })
-            dispatch({ type: 'SET_LOADING', payload: false }) // Add this missing line
-            throw error
-        }
-    }, [dispatch])
-
-    const forgot = useCallback(async (emailData: ForgotPasswordData) => {
-        dispatch({ type: 'SET_LOADING', payload: true })
-
-        try {
-            const response = await forgotPassword(emailData)
-            dispatch({ type: 'SET_LOADING', payload: false })
-            return response
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Failed to send recovery code'
-            dispatch({ type: 'SET_ERROR', payload: message })
-            throw error
-        }
-    }, [dispatch])
-
-    const reset = useCallback(async (resetData: ResetPasswordData) => {
-        dispatch({ type: 'SET_LOADING', payload: true })
-
-        try {
-            const response = await resetPassword(resetData)
-            dispatch({ type: 'SET_LOADING', payload: false })
-            return response
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Password reset failed'
-            dispatch({ type: 'SET_ERROR', payload: message })
-            throw error
-        }
-    }, [dispatch])
-
-    const logout = useCallback(async () => {
-        try {
-            await logoutUser()
-        } catch (error) {
-            console.error('Logout error:', error)
+            throw error;
         } finally {
-            // Clear localStorage
-            localStorage.removeItem('user')
-            localStorage.removeItem('token')
-
-            dispatch({ type: 'LOGOUT' })
+            setOperationLoading(false);
         }
-    }, [dispatch])
+    };
 
-    const clearError = useCallback(() => {
-        dispatch({ type: 'SET_ERROR', payload: null })
-    }, [dispatch])
+    const forgotPassword = async (data: ForgotPasswordData, locale: 'ar' | 'en' = 'en') => {
+        setOperationLoading(true);
+        clearError();
+
+        try {
+            const response = await authApi.forgotPassword(data, locale);
+
+            // Store email for reset
+            localStorage.setItem('reset_password_email', data.email);
+
+            return response;
+        } catch (error: any) {
+            setError(error.message || 'Failed to send recovery code');
+            throw error;
+        } finally {
+            setOperationLoading(false);
+        }
+    };
+
+    const resetPassword = async (data: ResetPasswordData, locale: 'ar' | 'en' = 'en') => {
+        setOperationLoading(true);
+        clearError();
+
+        try {
+            const response = await authApi.resetPassword(data, locale);
+
+            // Clear reset email
+            localStorage.removeItem('reset_password_email');
+
+            return response;
+        } catch (error: any) {
+            setError(error.message || 'Failed to reset password');
+            throw error;
+        } finally {
+            setOperationLoading(false);
+        }
+    };
+
+    const logout = () => {
+        authApi.logout();
+        setUser(null);
+        setToken(null);
+        setAuthenticated(false);
+    };
 
     return {
-        // State
-        user: state.user,
-        isAuthenticated: state.isAuthenticated,
-        isLoading: state.isLoading,
-        error: state.error,
-        needsVerification: state.needsVerification,
-        verificationEmail: state.verificationEmail,
-        isInitialized: state.isInitialized,
-
-        // Actions
+        // Operations
         register,
-        verify,
+        verifyAccount,
         login,
-        forgot,
-        reset,
+        forgotPassword,
+        resetPassword,
         logout,
         clearError,
-    }
-}
+
+        // Loading states
+        operationLoading,
+        isLoading,
+
+        // Auth state
+        user,
+        token,
+        isAuthenticated,
+        error,
+
+        // Helper functions
+        getPendingVerificationEmail: () => localStorage.getItem('pending_verification_email'),
+        getResetPasswordEmail: () => localStorage.getItem('reset_password_email'),
+    };
+};

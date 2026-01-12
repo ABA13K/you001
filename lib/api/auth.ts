@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// lib/api/auth.ts
 import {
     RegisterData,
     LoginData,
@@ -7,110 +5,114 @@ import {
     ForgotPasswordData,
     ResetPasswordData,
     AuthResponse,
-    User
-} from '@/types/auth'
+    ForgotPasswordResponse,
+    ResetPasswordResponse,
+    ErrorResponse
+} from '@/types/auth';
 
-const API_BASE_URL = 'https://aa-dev.site/you/api'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://aa-dev.site/you/api';
 
-// Helper function for API calls
-async function authFetch(endpoint: string, options: RequestInit = {}): Promise<any> {
-    try {
-        const url = `${API_BASE_URL}${endpoint}`
-
-        const response = await fetch(url, {
+export const authApi = {
+    // 1) Register
+    register: async (data: RegisterData, locale: 'ar' | 'en' = 'en'): Promise<AuthResponse> => {
+        const response = await fetch(`${API_BASE_URL}/register/${locale}`, {
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                ...options.headers,
             },
-            ...options,
-        })
-
-        const data = await response.json()
+            body: JSON.stringify(data),
+        });
 
         if (!response.ok) {
-            throw new Error(data.message || `HTTP error! status: ${response.status}`)
+            const error: ErrorResponse = await response.json();
+            throw new Error(error.message || 'Registration failed');
         }
 
-        return data
-    } catch (error) {
-        console.error(`Auth API error at ${endpoint}:`, error)
-        throw error
-    }
-}
+        return response.json();
+    },
 
-// Register new user
-export async function loginUser(loginData: LoginData): Promise<AuthResponse> {
-    const response = await authFetch('/login', {
-        method: 'POST',
-        body: JSON.stringify(loginData),
-    })
+    // 2) Account Verification
+    verifyAccount: async (data: VerificationData, locale: 'ar' | 'en' = 'en'): Promise<AuthResponse> => {
+        const response = await fetch(`${API_BASE_URL}/account-verification/${locale}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
 
-    console.log('🔑 Raw login response:', response)
+        if (!response.ok) {
+            const error: ErrorResponse = await response.json();
+            throw new Error(error.message || 'Verification failed');
+        }
 
-    // The response already matches AuthResponse interface
-    return response
-}
+        return response.json();
+    },
 
-// Register new user
-export async function registerUser(userData: RegisterData): Promise<AuthResponse> {
-    console.log('📤 Sending registration data:', userData)
+    // 3) Login
+    login: async (data: LoginData, locale: 'ar' | 'en' = 'en'): Promise<AuthResponse> => {
+        const response = await fetch(`${API_BASE_URL}/login/${locale}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
 
-    const response = await authFetch('/register', {
-        method: 'POST',
-        body: JSON.stringify(userData),
-    })
+        if (!response.ok) {
+            // Check if it's a 401 (needs verification)
+            if (response.status === 401) {
+                const error: ErrorResponse = await response.json();
+                throw new Error('NEEDS_VERIFICATION:' + error.message);
+            }
 
-    console.log('📥 Registration API response:', response)
+            const error: ErrorResponse = await response.json();
+            throw new Error(error.message || 'Login failed');
+        }
 
-    // Make sure the response structure is correct
-    if (!response.data || !response.message) {
-        console.warn('⚠️ Unexpected registration response structure:', response)
-    }
+        return response.json();
+    },
 
-    return response
-}
+    // 4) Find email for forgot password
+    forgotPassword: async (data: ForgotPasswordData, locale: 'ar' | 'en' = 'en'): Promise<ForgotPasswordResponse> => {
+        const response = await fetch(`${API_BASE_URL}/find-email/${locale}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
 
-// Verify account
-export async function verifyAccount(verificationData: VerificationData): Promise<AuthResponse> {
-    console.log('📤 Sending verification data:', verificationData)
+        if (!response.ok) {
+            const error: ErrorResponse = await response.json();
+            throw new Error(error.message || 'Failed to send recovery code');
+        }
 
-    const response = await authFetch('/account-verification', {
-        method: 'POST',
-        body: JSON.stringify(verificationData),
-    })
+        return response.json();
+    },
 
-    console.log('📥 Verification API response:', response)
+    // 5) Update/Reset password
+    resetPassword: async (data: ResetPasswordData, locale: 'ar' | 'en' = 'en'): Promise<ResetPasswordResponse> => {
+        const response = await fetch(`${API_BASE_URL}/update-password/${locale}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
 
-    return response
-}
+        if (!response.ok) {
+            const error: ErrorResponse = await response.json();
+            throw new Error(error.message || 'Failed to reset password');
+        }
 
-// Forgot password - send recovery code
-export async function forgotPassword(emailData: ForgotPasswordData): Promise<{ message: string }> {
-    return authFetch('/find-email', {
-        method: 'POST',
-        body: JSON.stringify(emailData),
-    })
-}
+        return response.json();
+    },
 
-// Reset password with recovery code
-export async function resetPassword(resetData: ResetPasswordData): Promise<{ message: string }> {
-    return authFetch('/update-password', {
-        method: 'PUT',
-        body: JSON.stringify(resetData),
-    })
-}
-
-// Logout user (if you have a logout endpoint)
-export async function logoutUser(): Promise<{ message: string }> {
-    return authFetch('/logout', {
-        method: 'POST',
-    })
-}
-
-// Get current user (if you have a user endpoint)
-export async function getCurrentUser(): Promise<{ user: User }> {
-    return authFetch('/user', {
-        method: 'GET',
-    })
-}
+    // Logout (client-side only)
+    logout: (): void => {
+        // Remove token and user from localStorage
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user');
+    },
+};

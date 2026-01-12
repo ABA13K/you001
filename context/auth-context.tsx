@@ -1,116 +1,280 @@
-// context/auth-context.tsx
-'use client'
+/* eslint-disable @typescript-eslint/no-explicit-any */
+'use client';
 
-import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react'
-import { User, AuthState } from '@/types/auth'
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { User, AuthState } from '@/types/auth';
 
-type AuthAction =
-  | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_USER'; payload: User | null }
-  | { type: 'SET_ERROR'; payload: string | null }
-  | { type: 'SET_NEEDS_VERIFICATION'; payload: boolean }
-  | { type: 'SET_VERIFICATION_EMAIL'; payload: string | null }
-  | { type: 'LOGOUT' }
-  | { type: 'SET_INITIALIZED' }
-
-const initialState: AuthState = {
-  user: null,
-  isAuthenticated: false,
-  isLoading: true, // Start with true
-  error: null,
-  needsVerification: false,
-  verificationEmail: null,
-  isInitialized: false,
+interface AuthContextType extends AuthState {
+  register: (data: any, locale?: 'ar' | 'en') => Promise<void>;
+  verifyAccount: (data: any, locale?: 'ar' | 'en') => Promise<void>;
+  login: (data: any, locale?: 'ar' | 'en') => Promise<void>;
+  forgotPassword: (data: any, locale?: 'ar' | 'en') => Promise<void>;
+  resetPassword: (data: any, locale?: 'ar' | 'en') => Promise<void>;
+  logout: () => void;
+  clearError: () => void;
 }
 
-function authReducer(state: AuthState, action: AuthAction): AuthState {
-  switch (action.type) {
-    case 'SET_LOADING':
-      return { ...state, isLoading: action.payload, error: null }
-    case 'SET_USER':
-      return { 
-        ...state, 
-        user: action.payload, 
-        isAuthenticated: !!action.payload,
-        isLoading: false,
-        error: null,
-        needsVerification: false,
-        isInitialized: true
-      }
-    case 'SET_ERROR':
-      return { ...state, error: action.payload, isLoading: false }
-    case 'SET_NEEDS_VERIFICATION':
-      return { ...state, needsVerification: action.payload, isLoading: false }
-    case 'SET_VERIFICATION_EMAIL':
-      return { ...state, verificationEmail: action.payload }
-    case 'LOGOUT':
-      return { 
-        ...initialState,
-        isInitialized: true // Keep initialized true on logout
-      }
-    case 'SET_INITIALIZED':
-      return {
-        ...state,
-        isInitialized: true,
-        isLoading: false
-      }
-    default:
-      return state
-  }
-}
-
-const AuthContext = createContext<{
-  state: AuthState
-  dispatch: React.Dispatch<AuthAction>
-}>({
-  state: initialState,
-  dispatch: () => null
-})
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(authReducer, initialState)
+  const [state, setState] = useState<AuthState>({
+    user: null,
+    token: null,
+    isAuthenticated: false,
+    isLoading: true,
+    error: null,
+  });
 
-  // Load user from localStorage on mount
+  // Initialize auth from localStorage on mount
   useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const savedUser = localStorage.getItem('user')
-        const token = localStorage.getItem('token')
-        
-        console.log('🔍 Checking localStorage for auth data...')
-        console.log('📁 User in localStorage:', savedUser ? 'Exists' : 'None')
-        console.log('🔑 Token in localStorage:', token ? 'Exists' : 'None')
-        
-        if (savedUser && token) {
-          const user = JSON.parse(savedUser)
-          console.log('✅ Found user in localStorage, setting auth state:', user)
-          dispatch({ type: 'SET_USER', payload: user })
-        } else {
-          console.log('ℹ️ No auth data in localStorage, marking as initialized')
-          dispatch({ type: 'SET_INITIALIZED' })
-        }
-      } catch (error) {
-        console.error('❌ Error loading user from storage:', error)
-        localStorage.removeItem('user')
-        localStorage.removeItem('token')
-        dispatch({ type: 'SET_INITIALIZED' })
-      }
-    }
+    const token = localStorage.getItem('auth_token');
+    const userStr = localStorage.getItem('user');
 
-    loadUser()
-  }, [])
+    if (token && userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setState({
+          user,
+          token,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
+      } catch (error) {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user');
+        setState(prev => ({ ...prev, isLoading: false }));
+      }
+    } else {
+      setState(prev => ({ ...prev, isLoading: false }));
+    }
+  }, []);
+
+  // Save auth to localStorage when state changes
+  useEffect(() => {
+    if (state.token && state.user) {
+      localStorage.setItem('auth_token', state.token);
+      localStorage.setItem('user', JSON.stringify(state.user));
+    }
+  }, [state.token, state.user]);
+
+  const register = async (data: any, locale: 'ar' | 'en' = 'en') => {
+    setState(prev => ({ ...prev, isLoading: true, error: null }));
+    
+    try {
+      const response = await fetch(`/api/auth/register?locale=${locale}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Registration failed');
+      }
+
+      // Registration successful, but user needs verification
+      // Store email for verification page
+      localStorage.setItem('pending_verification_email', data.email);
+      
+      setState(prev => ({ 
+        ...prev, 
+        isLoading: false,
+        error: null,
+      }));
+    } catch (error) {
+      setState(prev => ({ 
+        ...prev, 
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Registration failed',
+      }));
+      throw error;
+    }
+  };
+
+  const verifyAccount = async (data: any, locale: 'ar' | 'en' = 'en') => {
+    setState(prev => ({ ...prev, isLoading: true, error: null }));
+    
+    try {
+      const response = await fetch(`/api/auth/verify?locale=${locale}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Verification failed');
+      }
+
+      // Verification successful, set auth state
+      setState({
+        user: result.data,
+        token: result.token,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      });
+
+      // Clear pending verification email
+      localStorage.removeItem('pending_verification_email');
+    } catch (error) {
+      setState(prev => ({ 
+        ...prev, 
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Verification failed',
+      }));
+      throw error;
+    }
+  };
+
+  const login = async (data: any, locale: 'ar' | 'en' = 'en') => {
+    setState(prev => ({ ...prev, isLoading: true, error: null }));
+    
+    try {
+      const response = await fetch(`/api/auth/login?locale=${locale}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        // Handle needs verification case
+        if (response.status === 401 && result.message?.includes('verification')) {
+          throw new Error('NEEDS_VERIFICATION:' + result.message);
+        }
+        throw new Error(result.message || 'Login failed');
+      }
+
+      // Login successful
+      setState({
+        user: result.data,
+        token: result.token,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      setState(prev => ({ 
+        ...prev, 
+        isLoading: false,
+        error: errorMessage,
+      }));
+      throw error;
+    }
+  };
+
+  const forgotPassword = async (data: any, locale: 'ar' | 'en' = 'en') => {
+    setState(prev => ({ ...prev, isLoading: true, error: null }));
+    
+    try {
+      const response = await fetch(`/api/auth/forgot-password?locale=${locale}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to send recovery code');
+      }
+
+      // Store email for password reset page
+      localStorage.setItem('reset_password_email', data.email);
+      
+      setState(prev => ({ 
+        ...prev, 
+        isLoading: false,
+        error: null,
+      }));
+    } catch (error) {
+      setState(prev => ({ 
+        ...prev, 
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Failed to send recovery code',
+      }));
+      throw error;
+    }
+  };
+
+  const resetPassword = async (data: any, locale: 'ar' | 'en' = 'en') => {
+    setState(prev => ({ ...prev, isLoading: true, error: null }));
+    
+    try {
+      const response = await fetch(`/api/auth/reset-password?locale=${locale}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to reset password');
+      }
+
+      setState(prev => ({ 
+        ...prev, 
+        isLoading: false,
+        error: null,
+      }));
+
+      // Clear reset email
+      localStorage.removeItem('reset_password_email');
+    } catch (error) {
+      setState(prev => ({ 
+        ...prev, 
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Failed to reset password',
+      }));
+      throw error;
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user');
+    setState({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      isLoading: false,
+      error: null,
+    });
+  };
+
+  const clearError = () => {
+    setState(prev => ({ ...prev, error: null }));
+  };
+
+  const value = {
+    ...state,
+    register,
+    verifyAccount,
+    login,
+    forgotPassword,
+    resetPassword,
+    logout,
+    clearError,
+  };
 
   return (
-    <AuthContext.Provider value={{ state, dispatch }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
-  )
+  );
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context
+  return context;
 }

@@ -1,38 +1,27 @@
-// app/layout.tsx
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import './globals.css'
-import { SearchProvider } from '@/context/search-context'
-import { AuthProvider } from '@/context/auth-context'
-import { Suspense } from 'react'
-import Header from '@/components/layout/header'
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import { AuthProvider } from '@/context/auth-context';
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Your Ecommerce Store',
-  description: 'Modern ecommerce built with Next.js',
-}
+  title: 'E-Commerce Store',
+  description: 'Modern e-commerce application',
+};
 
 export default function RootLayout({
   children,
-}: {
-  children: React.ReactNode
-}) {
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html lang="en">
       <body className={inter.className}>
         <AuthProvider>
-          <SearchProvider>
-            <Suspense fallback={<div>Loading...</div>}>
-              <Header />
-              <main>
-                {children}
-              </main>
-            </Suspense>
-          </SearchProvider>
+            {children}
         </AuthProvider>
       </body>
     </html>
-  )
+  );
 }

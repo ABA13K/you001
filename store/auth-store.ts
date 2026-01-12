@@ -1,77 +1,48 @@
-// src/store/auth-store.ts
-import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { User, AuthState } from '@/types/auth';
 
-export interface User {
-    id: string
-    name: string
-    email: string
-    avatar?: string
+interface AuthStore extends AuthState {
+    setUser: (user: User | null) => void;
+    setToken: (token: string | null) => void;
+    setAuthenticated: (isAuthenticated: boolean) => void;
+    setLoading: (isLoading: boolean) => void;
+    setError: (error: string | null) => void;
+    logout: () => void;
+    clearError: () => void;
 }
 
-interface AuthState {
-    user: User | null
-    isAuthenticated: boolean
-    login: (email: string, password: string) => Promise<boolean>
-    signup: (name: string, email: string, password: string) => Promise<boolean>
-    logout: () => void
-    updateProfile: (userData: Partial<User>) => void
-}
-
-export const useAuthStore = create<AuthState>()(
+export const useAuthStore = create<AuthStore>()(
     persist(
-        (set, get) => ({
+        (set) => ({
             user: null,
+            token: null,
             isAuthenticated: false,
+            isLoading: false,
+            error: null,
 
-            login: async (email: string, password: string) => {
-                // Simulate API call
-                try {
-                    // Replace with actual API call
-                    const mockUser: User = {
-                        id: '1',
-                        name: 'John Doe',
-                        email: email,
-                    }
+            setUser: (user) => set({ user }),
+            setToken: (token) => set({ token }),
+            setAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
+            setLoading: (isLoading) => set({ isLoading }),
+            setError: (error) => set({ error }),
 
-                    set({ user: mockUser, isAuthenticated: true })
-                    return true
-                } catch (error) {
-                    console.error('Login failed:', error)
-                    return false
-                }
-            },
+            logout: () => set({
+                user: null,
+                token: null,
+                isAuthenticated: false,
+                error: null,
+            }),
 
-            signup: async (name: string, email: string, password: string) => {
-                // Simulate API call
-                try {
-                    const mockUser: User = {
-                        id: '1',
-                        name,
-                        email,
-                    }
-
-                    set({ user: mockUser, isAuthenticated: true })
-                    return true
-                } catch (error) {
-                    console.error('Signup failed:', error)
-                    return false
-                }
-            },
-
-            logout: () => {
-                set({ user: null, isAuthenticated: false })
-            },
-
-            updateProfile: (userData: Partial<User>) => {
-                const { user } = get()
-                if (user) {
-                    set({ user: { ...user, ...userData } })
-                }
-            },
+            clearError: () => set({ error: null }),
         }),
         {
             name: 'auth-storage',
+            partialize: (state) => ({
+                user: state.user,
+                token: state.token,
+                isAuthenticated: state.isAuthenticated,
+            }),
         }
     )
-)
+);
